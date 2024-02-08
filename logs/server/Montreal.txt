@@ -1,0 +1,4 @@
+2024/02/08 12:58:47 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: success
+2024/02/08 12:58:47 Remove appointment. Request parameters: MTLA080224 Physician Request: success Response: success
+2024/02/08 13:10:31 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: success
+2024/02/08 13:10:31 Remove appointment. Request parameters: MTLA080224 Physician Request: success Response: success
