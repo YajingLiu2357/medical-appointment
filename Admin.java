@@ -20,7 +20,8 @@ public class Admin extends Client{
         String log = server.removeAppointment(appointmentID, appointmentType);
         writeLog(log);
     }
-    public void listAppointmentAvailability(String appointmentType){
-
+    public void listAppointmentAvailability(String appointmentType) throws RemoteException {
+        String log = server.listAppointmentAvailability(appointmentType);
+        writeLog(log);
     }
 }
