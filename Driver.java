@@ -7,5 +7,9 @@ public class Driver {
         adminQUE.addAppointment("QUEM080224", "Surgeon", 2);
         adminMTL.listAppointmentAvailability("Physician");
         //adminMTL.removeAppointment("MTLA080224", "Physician");
+        Patient patientMTL = new Patient("MTLP0001");
+        patientMTL.bookAppointment("MTLP0001", "MTLA080224", "Physician");
+        patientMTL.getAppointmentSchedule("MTLP0001");
+        patientMTL.cancelAppointment("MTLP0001", "MTLA080224");
     }
 }

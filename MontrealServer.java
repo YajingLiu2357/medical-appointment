@@ -9,23 +9,25 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MontrealServer extends UnicastRemoteObject implements AppointmentInterface{
-    private Map<String, Map<String, Integer>> appointmentMTLOuter = new HashMap<>();
+    private Map<String, Map<String, Integer>> appointmentOuter;
+    private List<String> recordList;
     protected MontrealServer() throws RemoteException {
+        appointmentOuter = new HashMap<>();
+        recordList = new LinkedList<>();
     }
 
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) throws RemoteException {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentMTLOuter.get(appointmentType);
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         if(appointmentInner == null){
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
-            appointmentMTLOuter.put(appointmentType, appointmentInner);
+            appointmentOuter.put(appointmentType, appointmentInner);
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }else{
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment type already exists";
@@ -37,7 +39,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     @Override
     public String removeAppointment(String appointmentID, String appointmentType) throws RemoteException {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentMTLOuter.get(appointmentType);
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         if(appointmentInner != null){
             if(appointmentInner.containsKey(appointmentID)){
@@ -57,7 +59,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     @Override
     public String listAppointmentAvailability(String appointmentType) throws RemoteException {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentMTLOuter.get(appointmentType);
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         //TODO get other server's appointment availability
         Map<String, Integer> appointmentAll = new HashMap<>();
@@ -78,18 +80,62 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     }
 
     @Override
-    public void bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException {
-
+    public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException {
+        //TODO book appointment not same day, three for other city
+        //TODO book appointment from other city
+        String time = getTime();
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        String log = "";
+        if(appointmentInner != null && appointmentInner.containsKey(appointmentID) && appointmentInner.get(appointmentID) > 0){
+            appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
+            String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
+            recordList.add(bookRecord);
+            log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+        }else{
+            log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist or no capacity";
+        }
+        writeLog(log);
+        return log;
     }
 
     @Override
-    public void getAppointmentSchedule(String patientID) throws RemoteException {
-
+    public String getAppointmentSchedule(String patientID) throws RemoteException {
+        //TODO get other server's appointment schedule
+        String time = getTime();
+        List<String> schedule = new LinkedList<>();
+        for (String record : recordList){
+            String [] recordSplit = record.split(" ");
+            if(recordSplit[0].equals(patientID)){
+                schedule.add(record);
+            }
+        }
+        String log = "";
+        if(schedule.size() > 0){
+            log = time + " Get appointment schedule. Request parameters: " + patientID + " Request: success " + "Response: " + schedule.toString();
+        }else{
+            log = time + " Get appointment schedule. Request parameters: " + patientID + " Request: success " + "Response: fail because patient has no appointment";
+        }
+        writeLog(log);
+        return log;
     }
 
     @Override
-    public void cancelAppointment(String patientID, String appointmentID) throws RemoteException {
-
+    public String cancelAppointment(String patientID, String appointmentID) throws RemoteException {
+        // TODO cancel appointment from other city
+        String time = getTime();
+        String log = "";
+        for (String record : recordList){
+            String [] recordSplit = record.split(" ");
+            if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
+                recordList.remove(record);
+                appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
+                log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
+            }else{
+                log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
+            }
+        }
+        writeLog(log);
+        return log;
     }
 
     @Override

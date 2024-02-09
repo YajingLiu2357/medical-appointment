@@ -17,21 +17,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class QuebecServer extends UnicastRemoteObject implements AppointmentInterface{
-    private Map<String, Map<String, Integer>> appointmentQUEOuter;
+    private Map<String, Map<String, Integer>> appointmentOuter;
 
     protected QuebecServer() throws RemoteException {
-        appointmentQUEOuter = new HashMap<>();
+        appointmentOuter = new HashMap<>();
     }
 
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) throws RemoteException {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentQUEOuter.get(appointmentType);
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         if(appointmentInner == null){
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
-            appointmentQUEOuter.put(appointmentType, appointmentInner);
+            appointmentOuter.put(appointmentType, appointmentInner);
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }else{
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment type already exists";
@@ -51,18 +51,18 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
     }
 
     @Override
-    public void bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException {
-
+    public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException {
+        return null;
     }
 
     @Override
-    public void getAppointmentSchedule(String patientID) throws RemoteException {
-
+    public String getAppointmentSchedule(String patientID) throws RemoteException {
+        return null;
     }
 
     @Override
-    public void cancelAppointment(String patientID, String appointmentID) throws RemoteException {
-
+    public String cancelAppointment(String patientID, String appointmentID) throws RemoteException {
+        return null;
     }
     public String getTime(){
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
@@ -89,7 +89,7 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
     }
 
     public Map<String, Map<String, Integer>> getAppointmentOuter() {
-        return appointmentQUEOuter;
+        return appointmentOuter;
     }
 
     public static void main(String[] args) throws IOException, NotBoundException {

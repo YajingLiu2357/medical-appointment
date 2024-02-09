@@ -8,8 +8,8 @@ public interface AppointmentInterface extends Remote{
     String removeAppointment(String appointmentID, String appointmentType) throws RemoteException;
     String listAppointmentAvailability (String appointmentType) throws RemoteException;
     // Patient
-    void bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException;
-    void getAppointmentSchedule(String patientID) throws RemoteException;
-    void cancelAppointment(String patientID, String appointmentID) throws RemoteException;
+    String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException;
+    String getAppointmentSchedule(String patientID) throws RemoteException;
+    String cancelAppointment(String patientID, String appointmentID) throws RemoteException;
     Map<String, Map<String, Integer>> getAppointmentOuter() throws RemoteException;
 }
