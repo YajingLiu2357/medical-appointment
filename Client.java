@@ -34,4 +34,7 @@ public class Client {
             e.printStackTrace();
         }
     }
+    public void printInvalidCommandMessage(){
+        System.out.println("Invalid command. Please try again.");
+    }
 }

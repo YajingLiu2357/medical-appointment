@@ -1,15 +1,15 @@
 public class Driver {
     public static void main(String[] args) throws Exception{
-        Admin adminMTL = new Admin("MTLA0001");
-        adminMTL.addAppointment("MTLA080224", "Physician", 2);
-        Admin adminQUE = new Admin("QUEA0001");
-        adminQUE.addAppointment("QUEA080224", "Physician", 2);
-        adminQUE.addAppointment("QUEM080224", "Surgeon", 2);
-        adminMTL.listAppointmentAvailability("Physician");
+        AdminClient adminClientMTL = new AdminClient("MTLA0001");
+        adminClientMTL.addAppointment("MTLA080224", "Physician", 2);
+        AdminClient adminClientQUE = new AdminClient("QUEA0001");
+        adminClientQUE.addAppointment("QUEA080224", "Physician", 2);
+        adminClientQUE.addAppointment("QUEM080224", "Surgeon", 2);
+        adminClientMTL.listAppointmentAvailability("Physician");
         //adminMTL.removeAppointment("MTLA080224", "Physician");
-        Patient patientMTL = new Patient("MTLP0001");
-        patientMTL.bookAppointment("MTLP0001", "MTLA080224", "Physician");
-        patientMTL.getAppointmentSchedule("MTLP0001");
-        patientMTL.cancelAppointment("MTLP0001", "MTLA080224");
+        PatientClient patientClientMTL = new PatientClient("MTLP0001");
+        patientClientMTL.bookAppointment("MTLP0001", "MTLA080224", "Physician");
+        patientClientMTL.getAppointmentSchedule("MTLP0001");
+        patientClientMTL.cancelAppointment("MTLP0001", "MTLA080224");
     }
 }

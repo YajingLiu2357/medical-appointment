@@ -1,5 +1,5 @@
-public class Patient extends Client{
-    public Patient(String ID) throws Exception {
+public class PatientClient extends Client{
+    public PatientClient(String ID) throws Exception {
         super(ID);
     }
     public void bookAppointment(String patientID, String appointmentID, String appointmentType) throws Exception{
@@ -13,5 +13,14 @@ public class Patient extends Client{
     public void cancelAppointment(String patientID, String appointmentID) throws Exception{
         String log = server.cancelAppointment(patientID, appointmentID);
         writeLog(log);
+    }
+    public void addAppointment(String appointmentID, String appointmentType, int capacity){
+        printInvalidCommandMessage();
+    }
+    public void removeAppointment(String appointmentID, String appointmentType){
+        printInvalidCommandMessage();
+    }
+    public void listAppointmentAvailability(String appointmentType){
+        printInvalidCommandMessage();
     }
 }

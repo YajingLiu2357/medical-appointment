@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.*;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -24,7 +25,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
-        if(appointmentInner == null){
+        if(appointmentInner == null || !appointmentInner.containsKey(appointmentID)){
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
             appointmentOuter.put(appointmentType, appointmentInner);
@@ -37,31 +38,50 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     }
 
     @Override
-    public String removeAppointment(String appointmentID, String appointmentType) throws RemoteException {
+    public String removeAppointment(String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
-        if(appointmentInner != null){
-            if(appointmentInner.containsKey(appointmentID)){
-                appointmentInner.remove(appointmentID);
-                log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: success";
-            }else{
-                log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment ID does not exist";
+        if(appointmentInner != null && appointmentInner.containsKey(appointmentID)){
+            for (String record : recordList){
+                String [] recordSplit = record.split(" ");
+                if(recordSplit[1].equals(appointmentID)){
+                    String patientID = recordSplit[0];
+                    String response = getNextAppointment(appointmentType, appointmentID);
+                    if (!response.equals("Not available")){
+                        log = bookAppointment(patientID, response, appointmentType);
+                        recordList.remove(record);
+                        appointmentInner.remove(appointmentID);
+                        log = log + "\n" + time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: success";
+                        if (appointmentInner.size() == 0){
+                            appointmentOuter.remove(appointmentType);
+                        }
+                        writeLog(log);
+                        return log;
+                    }else{
+                        log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient has no next available appointment";
+                        writeLog(log);
+                        return log;
+                    }
+                }
+            }
+            appointmentInner.remove(appointmentID);
+            log = log + "\n" + time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: success";
+            if (appointmentInner.size() == 0){
+                appointmentOuter.remove(appointmentType);
             }
         }else{
-            log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment type does not exist";
+            log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist";
         }
         writeLog(log);
         return log;
-        // TODO If patient booked the appointment, notify the patient and book next available appointment
     }
 
     @Override
-    public String listAppointmentAvailability(String appointmentType) throws RemoteException {
+    public String listAppointmentAvailability(String appointmentType) throws RemoteException{
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
-        //TODO get other server's appointment availability
         Map<String, Integer> appointmentAll = new HashMap<>();
         if(appointmentInner != null){
             appointmentAll.putAll(appointmentInner);
@@ -70,7 +90,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
         if(otherAppointment != null){
             appointmentAll.putAll(otherAppointment);
         }
-        if(appointmentAll != null){
+        if(appointmentAll.size()!=0){
             log = time + " List appointment availability. Request parameters: " + appointmentType + " Request: success " + "Response: " + appointmentAll.toString();
         }else{
             log = time + " List appointment availability. Request parameters: " + appointmentType + " Request: success " + "Response: fail because appointment type does not exist";
@@ -80,30 +100,98 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     }
 
     @Override
-    public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException {
-        //TODO book appointment not same day, three for other city
-        //TODO book appointment from other city
-        String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
-        String log = "";
-        if(appointmentInner != null && appointmentInner.containsKey(appointmentID) && appointmentInner.get(appointmentID) > 0){
-            appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
-            String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
-            recordList.add(bookRecord);
-            log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+    public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
+        if (appointmentType.startsWith("MTL")){
+            String time = getTime();
+            Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+            String log = "";
+            List<String>  recordAllList = getAllRecordList();
+            if(appointmentInner != null && appointmentInner.containsKey(appointmentID) && appointmentInner.get(appointmentID) > 0){
+                List<String> recordOtherCities = new LinkedList<>();
+                for (String record : recordAllList){
+                    String [] recordSplit = record.split(" ");
+                    if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient already has appointment";
+                        writeLog(log);
+                        return log;
+                    }
+                    if(recordSplit[0].equals(patientID) && recordSplit[2].equals(appointmentType) && recordSplit[1].substring(4,10).equals(appointmentID.substring(4,10))){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient cannot book same type of appointment on the same day";
+                        writeLog(log);
+                        return log;
+                    }
+                    if(recordSplit[0].equals(patientID) && !recordSplit[1].substring(0, 3).equals(appointmentID.substring(0,3))){
+                        recordOtherCities.add(record);
+                    }
+                }
+                if (recordOtherCities.size() > 3){
+                    int earliestDay = Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(4,6));
+                    int earliestMonth = Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(6,8));
+                    int earliestYear = 2000 + Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(8,10));
+                    Calendar earliestDate = Calendar.getInstance();
+                    earliestDate.set(earliestYear, earliestMonth - 1 , earliestDay, 0, 0);
+                    for (String record : recordOtherCities){
+                        String [] recordSplit = record.split(" ");
+                        int day = Integer.parseInt(recordSplit[1].substring(4,6));
+                        int month = Integer.parseInt(recordSplit[1].substring(6,8));
+                        int year = Integer.parseInt(recordSplit[1].substring(8,10));
+                        if (year < earliestYear){
+                            earliestYear = year;
+                            earliestMonth = month;
+                            earliestDay = day;
+                        }else if (year == earliestYear && month < earliestMonth){
+                            earliestMonth = month;
+                            earliestDay = day;
+                        }else if (year == earliestYear && month == earliestMonth && day < earliestDay){
+                            earliestDay = day;
+                        }
+                    }
+                    int count = 0;
+                    for (String record : recordOtherCities){
+                        String [] recordSplit = record.split(" ");
+                        int day = Integer.parseInt(recordSplit[1].substring(4,6));
+                        int month = Integer.parseInt(recordSplit[1].substring(6,8));
+                        int year = Integer.parseInt(recordSplit[1].substring(8,10));
+                        Calendar tempDate = Calendar.getInstance();
+                        tempDate.set(year, month - 1 , day, 0, 0);
+                        long diff = tempDate.getTimeInMillis() - earliestDate.getTimeInMillis();
+                        long diffDays = diff / (24 * 60 * 60 * 1000);
+                        if (diffDays <= 7){
+                            count++;
+                        }
+                    }
+                    if (count > 3){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient cannot book more than 3 appointments from other cities";
+                        writeLog(log);
+                        return log;
+                    }
+                }
+                appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
+                String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
+                recordList.add(bookRecord);
+                log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+            }else{
+                log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist or no capacity";
+            }
+            writeLog(log);
+            return log;
         }else{
-            log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist or no capacity";
+            Registry registry = LocateRegistry.getRegistry(1099);
+            String serverName = appointmentType.substring(0,3);
+            AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
+            String log = server.bookAppointment(patientID, appointmentID, appointmentType);
+            writeLog(log);
+            return log;
         }
-        writeLog(log);
-        return log;
+
     }
 
     @Override
-    public String getAppointmentSchedule(String patientID) throws RemoteException {
-        //TODO get other server's appointment schedule
+    public String getAppointmentSchedule(String patientID) throws RemoteException, NotBoundException {
         String time = getTime();
         List<String> schedule = new LinkedList<>();
-        for (String record : recordList){
+        List<String> recordAllList = getAllRecordList();
+        for (String record : recordAllList){
             String [] recordSplit = record.split(" ");
             if(recordSplit[0].equals(patientID)){
                 schedule.add(record);
@@ -120,22 +208,30 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
     }
 
     @Override
-    public String cancelAppointment(String patientID, String appointmentID) throws RemoteException {
-        // TODO cancel appointment from other city
-        String time = getTime();
-        String log = "";
-        for (String record : recordList){
-            String [] recordSplit = record.split(" ");
-            if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
-                recordList.remove(record);
-                appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
-                log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
-            }else{
-                log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
+    public String cancelAppointment(String patientID, String appointmentID) throws RemoteException, NotBoundException {
+        if (appointmentID.startsWith("MTL")){
+            String time = getTime();
+            String log = "";
+            for (String record : recordList){
+                String [] recordSplit = record.split(" ");
+                if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
+                    recordList.remove(record);
+                    appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
+                    log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
+                }else{
+                    log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
+                }
             }
+            writeLog(log);
+            return log;
+        }else{
+            Registry registry = LocateRegistry.getRegistry(1099);
+            String serverName = appointmentID.substring(0,3);
+            AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
+            String log = server.cancelAppointment(patientID, appointmentID);
+            writeLog(log);
+            return log;
         }
-        writeLog(log);
-        return log;
     }
 
     @Override
@@ -196,5 +292,45 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
                 socket.close();
             }
         }
+    }
+    public String getNextAppointment(String appointmentType, String appointmentID){
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        if(appointmentInner != null){
+            for (String key : appointmentInner.keySet()){
+                char slot = key.charAt(3);
+                int day = Integer.parseInt(key.substring(4,6));
+                int month = Integer.parseInt(key.substring(6,8));
+                int year = Integer.parseInt(key.substring(8,10));
+                char previousSlot = appointmentID.charAt(3);
+                int previousDay = Integer.parseInt(appointmentID.substring(4,6));
+                int previousMonth = Integer.parseInt(appointmentID.substring(6,8));
+                int previousYear = Integer.parseInt(appointmentID.substring(8,10));
+                if ((day == previousDay && month == previousMonth && year == previousYear) && ((previousSlot == 'M' && (slot == 'A'|| slot == 'E')||(previousSlot == 'A' && (slot == 'E'))))){
+                    return key;
+                }else if (day > previousDay && month == previousMonth && year == previousYear){
+                    return key;
+                }else if (month > previousMonth && year == previousYear){
+                    return key;
+                }else if (year > previousYear){
+                    return key;
+                }else{
+                    return "Not available";
+                }
+            }
+        }
+        return "Not available";
+    }
+
+    public List<String> getRecordList() {
+        return recordList;
+    }
+    public List<String> getAllRecordList() throws RemoteException, NotBoundException {
+        List<String> recordListAll = new LinkedList<>();
+        recordListAll.addAll(recordList);
+        Registry registry = LocateRegistry.getRegistry(1099);
+        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("QUE");
+        List<String> recordListQuebec = quebecServer.getRecordList();
+        recordListAll.addAll(recordListQuebec);
+        return recordListAll;
     }
 }

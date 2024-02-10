@@ -14,10 +14,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class QuebecServer extends UnicastRemoteObject implements AppointmentInterface{
     private Map<String, Map<String, Integer>> appointmentOuter;
+    private List<String> recordList;
 
     protected QuebecServer() throws RemoteException {
         appointmentOuter = new HashMap<>();
@@ -125,5 +127,9 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
                 socket.close();
             }
         }
+    }
+
+    public List<String> getRecordList() {
+        return recordList;
     }
 }

@@ -1,14 +1,8 @@
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 
-public class Admin extends Client{
+public class AdminClient extends Client{
 
-    public Admin(String ID) throws Exception {
+    public AdminClient(String ID) throws Exception {
         super(ID);
     }
 
@@ -23,5 +17,14 @@ public class Admin extends Client{
     public void listAppointmentAvailability(String appointmentType) throws RemoteException {
         String log = server.listAppointmentAvailability(appointmentType);
         writeLog(log);
+    }
+    public void bookAppointment(String patientID, String appointmentID, String appointmentType){
+        printInvalidCommandMessage();
+    }
+    public void getAppointmentSchedule(String patientID){
+        printInvalidCommandMessage();
+    }
+    public void cancelAppointment(String patientID, String appointmentID){
+        printInvalidCommandMessage();
     }
 }
