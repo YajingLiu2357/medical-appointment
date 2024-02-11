@@ -1,3 +1,4 @@
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 public class AdminClient extends Client{
@@ -14,7 +15,7 @@ public class AdminClient extends Client{
         String log = server.removeAppointment(appointmentID, appointmentType);
         writeLog(log);
     }
-    public void listAppointmentAvailability(String appointmentType) throws RemoteException {
+    public void listAppointmentAvailability(String appointmentType) throws Exception{
         String log = server.listAppointmentAvailability(appointmentType);
         writeLog(log);
     }

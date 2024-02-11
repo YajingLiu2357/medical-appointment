@@ -4,13 +4,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-public class Client {
+public abstract class Client {
     String ID;
     AppointmentInterface server;
     public Client(String ID) throws Exception {
         this.ID = ID;
         getServer(ID);
     }
+    public abstract void addAppointment(String appointmentID, String appointmentType, int capacity) throws Exception;
+    public abstract void removeAppointment(String appointmentID, String appointmentType) throws Exception;
+    public abstract void listAppointmentAvailability(String appointmentType) throws Exception;
+    public abstract void bookAppointment(String patientID, String appointmentID, String appointmentType) throws Exception;
+    public abstract void getAppointmentSchedule(String patientID) throws Exception;
+    public abstract void cancelAppointment(String patientID, String appointmentID) throws Exception;
     public void getServer(String ID) throws Exception{
         Registry registry = LocateRegistry.getRegistry("localhost", 1099);
         String serverName = ID.substring(0, 3);

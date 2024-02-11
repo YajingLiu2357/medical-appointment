@@ -30,13 +30,13 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
-        if(appointmentInner == null){
+        if(appointmentInner == null || !appointmentInner.containsKey(appointmentID)){
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
             appointmentOuter.put(appointmentType, appointmentInner);
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }else{
-            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment type already exists";
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment already exists";
         }
         writeLog(log);
         return log;
@@ -109,7 +109,7 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
                 String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 Map<String, Integer> appointment;
                 if (receivePacket.getData() != null){
-                    appointment =quebecServer.getAppointmentOuter().get(appointmentType);
+                    appointment = quebecServer.getAppointmentOuter().get(appointmentType);
                     String reply = "";
                     if(appointment == null){
                         reply = "Not available";
@@ -121,7 +121,7 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
                 }
             }
         } catch(IOException e){
-            throw new RuntimeException(e);
+            e.printStackTrace();
         } finally{
             if(socket != null){
                 socket.close();

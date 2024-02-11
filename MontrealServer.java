@@ -25,13 +25,16 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
-        if(appointmentInner == null || !appointmentInner.containsKey(appointmentID)){
+        if (appointmentInner != null && appointmentInner.containsKey(appointmentID)){
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment already exists";
+        }else if (appointmentInner == null){
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
             appointmentOuter.put(appointmentType, appointmentInner);
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }else{
-            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment type already exists";
+            appointmentInner.put(appointmentID, capacity);
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }
         writeLog(log);
         return log;
@@ -101,7 +104,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
 
     @Override
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
-        if (appointmentType.startsWith("MTL")){
+        if (appointmentID.startsWith("MTL")){
             String time = getTime();
             Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
             String log = "";
@@ -177,7 +180,7 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
             return log;
         }else{
             Registry registry = LocateRegistry.getRegistry(1099);
-            String serverName = appointmentType.substring(0,3);
+            String serverName = appointmentID.substring(0,3);
             AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
             String log = server.bookAppointment(patientID, appointmentID, appointmentType);
             writeLog(log);
@@ -330,7 +333,9 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
         Registry registry = LocateRegistry.getRegistry(1099);
         AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("QUE");
         List<String> recordListQuebec = quebecServer.getRecordList();
-        recordListAll.addAll(recordListQuebec);
+        if (recordListQuebec != null){
+            recordListAll.addAll(recordListQuebec);
+        }
         return recordListAll;
     }
 }
