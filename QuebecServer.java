@@ -178,10 +178,12 @@ public class QuebecServer extends UnicastRemoteObject implements AppointmentInte
                         return log;
                     }
                 }
-                appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
-                String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
-                recordList.add(bookRecord);
-                log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+                synchronized (this){
+                    appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
+                    String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
+                    recordList.add(bookRecord);
+                    log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+                }
             }else{
                 log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist or no capacity";
             }
