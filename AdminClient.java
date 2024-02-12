@@ -19,13 +19,16 @@ public class AdminClient extends Client{
         String log = server.listAppointmentAvailability(appointmentType);
         writeLog(log);
     }
-    public void bookAppointment(String patientID, String appointmentID, String appointmentType){
-        printInvalidCommandMessage();
+    public void bookAppointment(String patientID, String appointmentID, String appointmentType) throws Exception{
+        String log = server.bookAppointment(patientID, appointmentID, appointmentType);
+        writeLog(log);
     }
-    public void getAppointmentSchedule(String patientID){
-        printInvalidCommandMessage();
+    public void getAppointmentSchedule(String patientID) throws Exception{
+        String log = server.getAppointmentSchedule(patientID);
+        writeLog(log);
     }
-    public void cancelAppointment(String patientID, String appointmentID){
-        printInvalidCommandMessage();
+    public void cancelAppointment(String patientID, String appointmentID) throws Exception{
+        String log = server.cancelAppointment(patientID, appointmentID);
+        writeLog(log);
     }
 }

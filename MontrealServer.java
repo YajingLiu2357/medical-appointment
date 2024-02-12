@@ -228,10 +228,11 @@ public class MontrealServer extends UnicastRemoteObject implements AppointmentIn
                     recordList.remove(record);
                     appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
                     log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
-                }else{
-                    log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
+                    writeLog(log);
+                    return log;
                 }
             }
+            log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
             writeLog(log);
             return log;
         }else{
