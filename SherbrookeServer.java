@@ -126,7 +126,7 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
                         writeLog(log);
                         return log;
                     }
-                    if(!recordSplit[0].substring(0, 3).equals(appointmentID.substring(0,3))){
+                    if(!recordSplit[0].substring(0, 3).equals(recordSplit[1].substring(0,3))){
                         recordOtherCities.add(record);
                     }
                 }
