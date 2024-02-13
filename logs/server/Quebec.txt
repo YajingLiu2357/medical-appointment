@@ -1,0 +1,8 @@
+2024/02/12 18:57:25 Add appointment. Request parameters: QUEA100224 Physician 2 Request: success Response: success
+2024/02/12 18:57:33 Add appointment. Request parameters: QUEA110224 Physician 2 Request: success Response: success
+2024/02/12 18:57:43 Add appointment. Request parameters: QUEA120224 Physician 2 Request: success Response: success
+2024/02/12 18:57:49 Add appointment. Request parameters: QUEA130224 Physician 2 Request: success Response: success
+2024/02/12 19:00:12 Book appointment. Request parameters: MTLP0002 QUEA100224 Physician Request: success Response: success
+2024/02/12 19:00:19 Book appointment. Request parameters: MTLP0002 QUEA110224 Physician Request: success Response: success
+2024/02/12 19:00:26 Book appointment. Request parameters: MTLP0002 QUEA120224 Physician Request: success Response: success
+2024/02/12 19:00:35 Book appointment. Request parameters: MTLP0002 QUEA130224 Physician Request: success Response: fail because patient cannot book more than 3 appointments from other cities

@@ -1,0 +1,23 @@
+2024/02/12 18:58:30 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: success
+2024/02/12 18:58:37 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: fail because appointment already exists
+2024/02/12 18:58:47 Add appointment. Request parameters: MTLM080224 Physician 2 Request: success Response: success
+2024/02/12 18:58:55 List appointment availability. Request parameters: Physician Request: success Response: {QUEA120224=2, MTLA080224=2, QUEA110224=2, QUEA100224=2, QUEA130224=2, SHEA090224=2, MTLM080224=2}
+2024/02/12 18:59:01 Add appointment. Request parameters: MTLE080224 Surgeon 3 Request: success Response: success
+2024/02/12 18:59:07 List appointment availability. Request parameters: Surgeon Request: success Response: {MTLE080224=3}
+2024/02/12 18:59:14 Remove appointment. Request parameters: MTLE080224 Surgeon Request: success Response: success
+2024/02/12 18:59:21 List appointment availability. Request parameters: Surgeon Request: success Response: fail because appointment type does not exist
+2024/02/12 18:59:28 Add appointment. Request parameters: MTLA140224 Dental 4 Request: success Response: success
+2024/02/12 18:59:47 Book appointment. Request parameters: MTLP0001 MTLM080224 Physician Request: success Response: success
+2024/02/12 18:59:53 Book appointment. Request parameters: MTLP0001 MTLA080224 Physician Request: success Response: fail because patient cannot book same type of appointment on the same day
+2024/02/12 19:00:12 Book appointment. Request parameters: MTLP0002 QUEA100224 Physician Request: success Response: success
+2024/02/12 19:00:19 Book appointment. Request parameters: MTLP0002 QUEA110224 Physician Request: success Response: success
+2024/02/12 19:00:26 Book appointment. Request parameters: MTLP0002 QUEA120224 Physician Request: success Response: success
+2024/02/12 19:00:35 Book appointment. Request parameters: MTLP0002 QUEA130224 Physician Request: success Response: fail because patient cannot book more than 3 appointments from other cities
+2024/02/12 19:00:43 Book appointment. Request parameters: MTLP0002 MTLA140224 Dental Request: success Response: success
+2024/02/12 19:00:53 Get appointment schedule. Request parameters: MTLP0002 Request: success Response: [MTLP0002 MTLA140224 Dental, MTLP0002 QUEA100224 Physician, MTLP0002 QUEA110224 Physician, MTLP0002 QUEA120224 Physician]
+2024/02/12 19:01:00 Cancel appointment. Request parameters: MTLP0002 MTLA140224 Request: success Response: success
+2024/02/12 19:01:06 Get appointment schedule. Request parameters: MTLP0002 Request: success Response: [MTLP0002 QUEA100224 Physician, MTLP0002 QUEA110224 Physician, MTLP0002 QUEA120224 Physician]
+2024/02/12 19:01:38 Book appointment. Request parameters: MTLP0001 MTLA080224 Physician Request: success Response: success
+2024/02/12 19:01:38 Book appointment. Request parameters: MTLP0001 MTLA080224 Physician Request: success Response: success
+2024/02/12 19:01:38 Remove appointment. Request parameters: MTLM080224 Physician Request: success Response: success
+2024/02/12 19:02:40 Cancel appointment. Request parameters: MTLP0002 MTLE080224 Request: success Response: fail because appointment does not exist

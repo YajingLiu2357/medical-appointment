@@ -1,0 +1,11 @@
+2024/02/12 18:58:30 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: success
+2024/02/12 18:58:37 Add appointment. Request parameters: MTLA080224 Physician 2 Request: success Response: fail because appointment already exists
+2024/02/12 18:58:47 Add appointment. Request parameters: MTLM080224 Physician 2 Request: success Response: success
+2024/02/12 18:58:55 List appointment availability. Request parameters: Physician Request: success Response: {QUEA120224=2, MTLA080224=2, QUEA110224=2, QUEA100224=2, QUEA130224=2, SHEA090224=2, MTLM080224=2}
+2024/02/12 18:59:01 Add appointment. Request parameters: MTLE080224 Surgeon 3 Request: success Response: success
+2024/02/12 18:59:07 List appointment availability. Request parameters: Surgeon Request: success Response: {MTLE080224=3}
+2024/02/12 18:59:14 Remove appointment. Request parameters: MTLE080224 Surgeon Request: success Response: success
+2024/02/12 18:59:21 List appointment availability. Request parameters: Surgeon Request: success Response: fail because appointment type does not exist
+2024/02/12 18:59:28 Add appointment. Request parameters: MTLA140224 Dental 4 Request: success Response: success
+2024/02/12 19:01:38 Book appointment. Request parameters: MTLP0001 MTLA080224 Physician Request: success Response: success
+2024/02/12 19:01:38 Remove appointment. Request parameters: MTLM080224 Physician Request: success Response: success

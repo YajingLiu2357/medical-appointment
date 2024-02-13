@@ -1,0 +1,2 @@
+2024/02/12 18:59:47 Book appointment. Request parameters: MTLP0001 MTLM080224 Physician Request: success Response: success
+2024/02/12 18:59:53 Book appointment. Request parameters: MTLP0001 MTLA080224 Physician Request: success Response: fail because patient cannot book same type of appointment on the same day
