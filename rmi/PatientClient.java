@@ -1,4 +1,7 @@
-public class PatientClient extends Client{
+package rmi;
+
+
+public class PatientClient extends Client {
     public PatientClient(String ID) throws Exception {
         super(ID);
     }

@@ -1,7 +1,9 @@
+package rmi;
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
-public class AdminClient extends Client{
+public class AdminClient extends Client {
 
     public AdminClient(String ID) throws Exception {
         super(ID);

@@ -1,28 +1,33 @@
-import DHMSApp.DHMSPOA;
+package rmi;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class MontrealServer extends DHMSPOA {
+public class SherbrookeServer extends UnicastRemoteObject implements AppointmentInterface {
     private Map<String, Map<String, Integer>> appointmentOuter;
     private List<String> recordList;
     private List<String> recordOtherCities;
-    protected MontrealServer(){
+    protected SherbrookeServer() throws RemoteException {
         appointmentOuter = new HashMap<>();
         recordList = new LinkedList<>();
         recordOtherCities = new LinkedList<>();
     }
-    public String hello() {
-        return "Hello, world!";
-    }
 
     @Override
-    public String addAppointment(String appointmentID, String appointmentType, int capacity) {
+    public String addAppointment(String appointmentID, String appointmentType, int capacity) throws RemoteException {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
@@ -42,7 +47,7 @@ public class MontrealServer extends DHMSPOA {
     }
 
     @Override
-    public String removeAppointment(String appointmentID, String appointmentType) {
+    public String removeAppointment(String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
@@ -82,8 +87,7 @@ public class MontrealServer extends DHMSPOA {
     }
 
     @Override
-    public String listAppointmentAvailability(String appointmentType) {
-        // TODO: get other cities' appointment availability
+    public String listAppointmentAvailability(String appointmentType) throws RemoteException, NotBoundException {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
@@ -91,10 +95,10 @@ public class MontrealServer extends DHMSPOA {
         if(appointmentInner != null){
             appointmentAll.putAll(appointmentInner);
         }
-//        Map<String, Integer> otherAppointment = getOtherAppointment(appointmentType);
-//        if(otherAppointment != null){
-//            appointmentAll.putAll(otherAppointment);
-//        }
+        Map<String, Integer> otherAppointment = getOtherAppointment(appointmentType);
+        if(otherAppointment != null){
+            appointmentAll.putAll(otherAppointment);
+        }
         if(appointmentAll.size()!=0){
             log = time + " List appointment availability. Request parameters: " + appointmentType + " Request: success " + "Response: " + appointmentAll.toString();
         }else{
@@ -105,8 +109,8 @@ public class MontrealServer extends DHMSPOA {
     }
 
     @Override
-    public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
-        if (appointmentID.startsWith("MTL")){
+    public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
+        if (appointmentID.startsWith("SHE")){
             String time = getTime();
             Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
             String log = "";
@@ -186,19 +190,18 @@ public class MontrealServer extends DHMSPOA {
             writeLog(log);
             return log;
         }else{
-            // TODO: book appointment from other cities
-//            Registry registry = LocateRegistry.getRegistry(1099);
-//            String serverName = appointmentID.substring(0,3);
-//            rmi.AppointmentInterface server = (rmi.AppointmentInterface) registry.lookup(serverName);
-//            String log = server.bookAppointment(patientID, appointmentID, appointmentType);
-//            writeLog(log);
-            return null;
+            Registry registry = LocateRegistry.getRegistry(1099);
+            String serverName = appointmentID.substring(0,3);
+            AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
+            String log = server.bookAppointment(patientID, appointmentID, appointmentType);
+            writeLog(log);
+            return log;
         }
+
     }
 
     @Override
-    public String getAppointmentSchedule(String patientID) {
-        // TODO: get other cities' appointment schedule
+    public String getAppointmentSchedule(String patientID) throws RemoteException, NotBoundException {
         String time = getTime();
         List<String> schedule = new LinkedList<>();
         List<String> recordAllList = getAllRecordList();
@@ -219,8 +222,8 @@ public class MontrealServer extends DHMSPOA {
     }
 
     @Override
-    public String cancelAppointment(String patientID, String appointmentID) {
-        if (appointmentID.startsWith("MTL")){
+    public String cancelAppointment(String patientID, String appointmentID) throws RemoteException, NotBoundException {
+        if (appointmentID.startsWith("SHE")){
             String time = getTime();
             String log = "";
             for (String record : recordList){
@@ -229,28 +232,30 @@ public class MontrealServer extends DHMSPOA {
                     recordList.remove(record);
                     appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
                     log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
-                    writeLog(log);
-                    return log;
+                }else{
+                    log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
                 }
             }
-            log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
             writeLog(log);
             return log;
         }else{
-            // TODO: cancel appointment from other cities
-//            Registry registry = LocateRegistry.getRegistry(1099);
-//            String serverName = appointmentID.substring(0,3);
-//            rmi.AppointmentInterface server = (rmi.AppointmentInterface) registry.lookup(serverName);
-//            String log = server.cancelAppointment(patientID, appointmentID);
-//            writeLog(log);
-//            return log;
-            return null;
+            Registry registry = LocateRegistry.getRegistry(1099);
+            String serverName = appointmentID.substring(0,3);
+            AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
+            String log = server.cancelAppointment(patientID, appointmentID);
+            writeLog(log);
+            return log;
         }
     }
 
     @Override
-    public String swapAppointment(String patientID, String oldAppointmentID, String oldAppointmentType, String newAppointmentID, String newAppointmentType) {
-        return null;
+    public Map<String, Map<String, Integer>> getAppointmentOuter() throws RemoteException {
+        return appointmentOuter;
+    }
+
+    @Override
+    public List<String> getRecordList() throws RemoteException {
+        return recordList;
     }
     public String getTime(){
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
@@ -258,7 +263,7 @@ public class MontrealServer extends DHMSPOA {
         return dtf.format(now);
     }
     public void writeLog (String log){
-        String path = "./logs/server/Montreal.txt";
+        String path = "./logs/server/Sherbrooke.txt";
         try{
             File file = new File(path);
             if(!file.exists()){
@@ -302,21 +307,103 @@ public class MontrealServer extends DHMSPOA {
         }
         return "Not available";
     }
-    public List<String> getAllRecordList(){
-        // TODO: get other cities' record list
+    public Map<String, Integer> getOtherAppointment(String appointmentType){
+        Map<String, Integer> appointmentOther = new HashMap<>();
+        DatagramSocket socketQUE = null;
+        DatagramSocket socketMTL = null;
+        try {
+            socketQUE = new DatagramSocket();
+            InetAddress address = InetAddress.getByName("localhost");
+            byte[] sendBuffer = appointmentType.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5001);
+            socketQUE.send(sendPacket);
+            // buffer length may need to expand
+            byte[] receiveBuffer = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketQUE.receive(receivePacket);
+            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")){
+                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
+                String [] appointments = receiveDataTrim.split(",");
+                for (String appointment : appointments){
+                    String [] appointmentSplit = appointment.split("=");
+                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
+                }
+            }
+            socketMTL = new DatagramSocket();
+            sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5002);
+            socketMTL.send(sendPacket);
+            receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketMTL.receive(receivePacket);
+            receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")){
+                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
+                String [] appointments = receiveDataTrim.split(",");
+                for (String appointment : appointments){
+                    String [] appointmentSplit = appointment.split("=");
+                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
+                }
+            }
+            return appointmentOther;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(socketQUE != null){
+                socketQUE.close();
+            }
+            if (socketMTL != null){
+                socketMTL.close();
+            }
+        }
+    }
+    public List<String> getAllRecordList() throws RemoteException, NotBoundException {
         List<String> recordListAll = new LinkedList<>();
         recordListAll.addAll(recordList);
-//        Registry registry = LocateRegistry.getRegistry(1099);
-//        rmi.AppointmentInterface quebecServer = (rmi.AppointmentInterface) registry.lookup("QUE");
-//        List<String> recordListQuebec = quebecServer.getRecordList();
-//        rmi.AppointmentInterface sherbrookeServer = (rmi.AppointmentInterface) registry.lookup("SHE");
-//        List<String> recordListSherbrooke = sherbrookeServer.getRecordList();
-//        if (recordListQuebec != null){
-//            recordListAll.addAll(recordListQuebec);
-//        }
-//        if (recordListSherbrooke != null){
-//            recordListAll.addAll(recordListSherbrooke);
-//        }
+        Registry registry = LocateRegistry.getRegistry(1099);
+        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("QUE");
+        List<String> recordListQuebec = quebecServer.getRecordList();
+        AppointmentInterface montrealServer = (AppointmentInterface) registry.lookup("MTL");
+        List<String> recordListMontreal = montrealServer.getRecordList();
+        if (recordListQuebec != null){
+            recordListAll.addAll(recordListQuebec);
+        }
+        if (recordListMontreal != null){
+            recordListAll.addAll(recordListMontreal);
+        }
         return recordListAll;
+    }
+    public static void main(String[] args) throws Exception{
+        Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("SHE");
+        DatagramSocket socket = new DatagramSocket(Integer.parseInt("5003"));
+        try{
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket;
+            while(true){
+                receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                socket.receive(receivePacket);
+                InetAddress address = receivePacket.getAddress();
+                int port = receivePacket.getPort();
+                String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                Map<String, Integer> appointment;
+                if (receivePacket.getData() != null){
+                    appointment = quebecServer.getAppointmentOuter().get(appointmentType);
+                    String reply = "";
+                    if(appointment == null){
+                        reply = "Not available";
+                    }else{
+                        reply = appointment.toString();
+                    }
+                    DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), address, port);
+                    socket.send(replyPacket);
+                }
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        } finally{
+            if(socket != null){
+                socket.close();
+            }
+        }
     }
 }

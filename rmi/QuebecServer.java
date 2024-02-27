@@ -1,3 +1,5 @@
+package rmi;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,11 +16,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class SherbrookeServer extends UnicastRemoteObject implements AppointmentInterface{
+public class QuebecServer extends UnicastRemoteObject implements AppointmentInterface {
     private Map<String, Map<String, Integer>> appointmentOuter;
     private List<String> recordList;
     private List<String> recordOtherCities;
-    protected SherbrookeServer() throws RemoteException {
+
+    protected QuebecServer() throws RemoteException {
         appointmentOuter = new HashMap<>();
         recordList = new LinkedList<>();
         recordOtherCities = new LinkedList<>();
@@ -85,7 +88,7 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
     }
 
     @Override
-    public String listAppointmentAvailability(String appointmentType) throws RemoteException, NotBoundException {
+    public String listAppointmentAvailability(String appointmentType) throws RemoteException {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
@@ -108,7 +111,7 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
 
     @Override
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) throws RemoteException, NotBoundException {
-        if (appointmentID.startsWith("SHE")){
+        if (appointmentID.startsWith("QUE")){
             String time = getTime();
             Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
             String log = "";
@@ -221,7 +224,7 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
 
     @Override
     public String cancelAppointment(String patientID, String appointmentID) throws RemoteException, NotBoundException {
-        if (appointmentID.startsWith("SHE")){
+        if (appointmentID.startsWith("QUE")){
             String time = getTime();
             String log = "";
             for (String record : recordList){
@@ -245,23 +248,13 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
             return log;
         }
     }
-
-    @Override
-    public Map<String, Map<String, Integer>> getAppointmentOuter() throws RemoteException {
-        return appointmentOuter;
-    }
-
-    @Override
-    public List<String> getRecordList() throws RemoteException {
-        return recordList;
-    }
     public String getTime(){
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
         return dtf.format(now);
     }
-    public void writeLog (String log){
-        String path = "./logs/server/Sherbrooke.txt";
+    public static void writeLog(String log){
+        String path = "./logs/server/Quebec.txt";
         try{
             File file = new File(path);
             if(!file.exists()){
@@ -277,6 +270,49 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
         }catch (IOException e){
             e.printStackTrace();
         }
+    }
+
+    public Map<String, Map<String, Integer>> getAppointmentOuter() {
+        return appointmentOuter;
+    }
+
+    public static void main(String[] args) throws IOException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("QUE");
+        DatagramSocket socket = new DatagramSocket(Integer.parseInt("5001"));
+        try{
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket;
+            while(true){
+                receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                socket.receive(receivePacket);
+                InetAddress address = receivePacket.getAddress();
+                int port = receivePacket.getPort();
+                String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                Map<String, Integer> appointment;
+                if (receivePacket.getData() != null){
+                    appointment = quebecServer.getAppointmentOuter().get(appointmentType);
+                    String reply = "";
+                    if(appointment == null){
+                        reply = "Not available";
+                    }else{
+                        reply = appointment.toString();
+                    }
+                    DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), address, port);
+                    socket.send(replyPacket);
+                }
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        } finally{
+            if(socket != null){
+                socket.close();
+            }
+        }
+    }
+
+    public List<String> getRecordList() {
+        return recordList;
     }
     public String getNextAppointment(String appointmentType, String appointmentID){
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
@@ -307,18 +343,18 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
     }
     public Map<String, Integer> getOtherAppointment(String appointmentType){
         Map<String, Integer> appointmentOther = new HashMap<>();
-        DatagramSocket socketQUE = null;
         DatagramSocket socketMTL = null;
+        DatagramSocket socketSHE = null;
         try {
-            socketQUE = new DatagramSocket();
+            socketMTL = new DatagramSocket();
             InetAddress address = InetAddress.getByName("localhost");
             byte[] sendBuffer = appointmentType.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5001);
-            socketQUE.send(sendPacket);
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5002);
+            socketMTL.send(sendPacket);
             // buffer length may need to expand
             byte[] receiveBuffer = new byte[1024];
             DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            socketQUE.receive(receivePacket);
+            socketMTL.receive(receivePacket);
             String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
             if (!receiveData.equals("Not available")){
                 String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
@@ -328,11 +364,11 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
                     appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
                 }
             }
-            socketMTL = new DatagramSocket();
-            sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5002);
-            socketMTL.send(sendPacket);
+            socketSHE = new DatagramSocket();
+            sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5003);
+            socketSHE.send(sendPacket);
             receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            socketMTL.receive(receivePacket);
+            socketSHE.receive(receivePacket);
             receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
             if (!receiveData.equals("Not available")){
                 String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
@@ -346,11 +382,11 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
-            if(socketQUE != null){
-                socketQUE.close();
-            }
-            if (socketMTL != null){
+            if(socketMTL != null){
                 socketMTL.close();
+            }
+            if (socketSHE != null){
+                socketSHE.close();
             }
         }
     }
@@ -358,50 +394,16 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
         List<String> recordListAll = new LinkedList<>();
         recordListAll.addAll(recordList);
         Registry registry = LocateRegistry.getRegistry(1099);
-        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("QUE");
-        List<String> recordListQuebec = quebecServer.getRecordList();
         AppointmentInterface montrealServer = (AppointmentInterface) registry.lookup("MTL");
         List<String> recordListMontreal = montrealServer.getRecordList();
-        if (recordListQuebec != null){
-            recordListAll.addAll(recordListQuebec);
-        }
+        AppointmentInterface sherbrookeServer = (AppointmentInterface) registry.lookup("SHE");
+        List<String> recordListSherbrooke = sherbrookeServer.getRecordList();
         if (recordListMontreal != null){
             recordListAll.addAll(recordListMontreal);
         }
-        return recordListAll;
-    }
-    public static void main(String[] args) throws Exception{
-        Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-        AppointmentInterface quebecServer = (AppointmentInterface) registry.lookup("SHE");
-        DatagramSocket socket = new DatagramSocket(Integer.parseInt("5003"));
-        try{
-            byte[] receiveData = new byte[1024];
-            DatagramPacket receivePacket;
-            while(true){
-                receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                socket.receive(receivePacket);
-                InetAddress address = receivePacket.getAddress();
-                int port = receivePacket.getPort();
-                String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                Map<String, Integer> appointment;
-                if (receivePacket.getData() != null){
-                    appointment = quebecServer.getAppointmentOuter().get(appointmentType);
-                    String reply = "";
-                    if(appointment == null){
-                        reply = "Not available";
-                    }else{
-                        reply = appointment.toString();
-                    }
-                    DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), address, port);
-                    socket.send(replyPacket);
-                }
-            }
-        } catch(IOException e){
-            e.printStackTrace();
-        } finally{
-            if(socket != null){
-                socket.close();
-            }
+        if (recordListSherbrooke != null){
+            recordListAll.addAll(recordListSherbrooke);
         }
+        return recordListAll;
     }
 }
