@@ -17,7 +17,6 @@ public class Server {
             // get reference to rootpoa & activate the POAManager
             POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
             rootpoa.the_POAManager().activate();
-
             // create servant
             MontrealServer montrealServer = new MontrealServer();
 

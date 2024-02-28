@@ -60,6 +60,7 @@ public class MontrealServer extends DHMSPOA {
                         recordList.remove(record);
                         log = bookAppointment(patientID, response, appointmentType);
                         appointmentInner.remove(appointmentID);
+                        changeAppointmentData();
                         log = log + "\n" + time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: success";
                         if (appointmentInner.size() == 0){
                             appointmentOuter.remove(appointmentType);
@@ -74,6 +75,7 @@ public class MontrealServer extends DHMSPOA {
                 }
             }
             appointmentInner.remove(appointmentID);
+            changeAppointmentData();
             log = time + " Remove appointment. Request parameters: " + appointmentID + " " + appointmentType + " Request: success " + "Response: success";
             if (appointmentInner.size() == 0){
                 appointmentOuter.remove(appointmentType);
@@ -96,7 +98,6 @@ public class MontrealServer extends DHMSPOA {
             appointmentAll.putAll(appointmentInner);
         }
         Map<String, Integer> otherAppointment = getOtherAppointment(appointmentType);
-        System.out.println(otherAppointment);
         if(otherAppointment != null){
             appointmentAll.putAll(otherAppointment);
         }
@@ -308,20 +309,53 @@ public class MontrealServer extends DHMSPOA {
         return "Not available";
     }
     public List<String> getAllRecordList(){
-        // TODO: get other cities' record list
         List<String> recordListAll = new LinkedList<>();
-        recordListAll.addAll(recordList);
-//        Registry registry = LocateRegistry.getRegistry(1099);
-//        rmi.AppointmentInterface quebecServer = (rmi.AppointmentInterface) registry.lookup("QUE");
-//        List<String> recordListQuebec = quebecServer.getRecordList();
-//        rmi.AppointmentInterface sherbrookeServer = (rmi.AppointmentInterface) registry.lookup("SHE");
-//        List<String> recordListSherbrooke = sherbrookeServer.getRecordList();
-//        if (recordListQuebec != null){
-//            recordListAll.addAll(recordListQuebec);
-//        }
-//        if (recordListSherbrooke != null){
-//            recordListAll.addAll(recordListSherbrooke);
-//        }
+        if (recordList != null){
+            recordListAll.addAll(recordList);
+        }
+        DatagramSocket socketQUE = null;
+        DatagramSocket socketSHE = null;
+        try {
+            socketQUE = new DatagramSocket();
+            InetAddress address = InetAddress.getByName("localhost");
+            byte[] sendBuffer = new byte[1024];
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, 5004);
+            socketQUE.send(sendPacket);
+            // buffer length may need to expand
+            byte[] receiveBuffer = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketQUE.receive(receivePacket);
+            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")) {
+                String receiveDataTrim = receiveData.replaceAll("\\[", "").replaceAll("\\]", "");
+                String [] records = receiveDataTrim.split(",");
+                for (String record : records){
+                    recordListAll.add(record);
+                }
+            }
+            socketSHE = new DatagramSocket();
+            sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5005);
+            socketSHE.send(sendPacket);
+            receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketSHE.receive(receivePacket);
+            receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")) {
+                String receiveDataTrim = receiveData.replaceAll("\\[", "").replaceAll("\\]", "");
+                String [] records = receiveDataTrim.split(",");
+                for (String record : records){
+                    recordListAll.add(record);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(socketQUE != null){
+                socketQUE.close();
+            }
+            if(socketSHE != null){
+                socketSHE.close();
+            }
+        }
         return recordListAll;
     }
     public static Map<String, Map<String, Integer>> getAppointment() {

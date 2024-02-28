@@ -7,7 +7,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SherbrookeServer extends DHMSPOA {
@@ -78,11 +80,32 @@ public class SherbrookeServer extends DHMSPOA {
         }
         return null;
     }
+    public static List<String> getRecordList(){
+        String filePath = "./data/record/Sherbrooke.txt";
+        List<String> recordList = new ArrayList<>();
+        try{
+            FileReader fileReader = new FileReader(filePath);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null){
+                recordList.add(line);
+            }
+            bufferedReader.close();
+            fileReader.close();
+            return recordList;
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
     public static void main(String[] args) throws SocketException {
         DatagramSocket socket = new DatagramSocket(Integer.parseInt("5003"));
+        DatagramSocket socketRecord = new DatagramSocket(Integer.parseInt("5005"));
         try{
             byte[] receiveData = new byte[1024];
             DatagramPacket receivePacket;
+            byte[] receiveDataRecord = new byte[1024];
+            DatagramPacket receivePacketRecord;
             while(true){
                 receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 socket.receive(receivePacket);
@@ -100,6 +123,22 @@ public class SherbrookeServer extends DHMSPOA {
                     }
                     DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), address, port);
                     socket.send(replyPacket);
+                }
+                receivePacketRecord = new DatagramPacket(receiveDataRecord, receiveDataRecord.length);
+                socketRecord.receive(receivePacketRecord);
+                InetAddress addressRecord = receivePacketRecord.getAddress();
+                int portRecord = receivePacketRecord.getPort();
+                List<String> recordList;
+                if (addressRecord != null){
+                    recordList = getRecordList();
+                    String replyRecord = "";
+                    if(recordList.size() == 0){
+                        replyRecord = "Not available";
+                    }else{
+                        replyRecord = recordList.toString();
+                    }
+                    DatagramPacket replyPacketRecord = new DatagramPacket(replyRecord.getBytes(), replyRecord.length(), addressRecord, portRecord);
+                    socketRecord.send(replyPacketRecord);
                 }
             }
         } catch(IOException e){

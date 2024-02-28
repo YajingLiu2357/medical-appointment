@@ -25,8 +25,8 @@ public class Client {
             //String result2 = href.removeAppointment("MTLA270224", "Physician");
             String result3 = href.listAppointmentAvailability("Physician");
             String result4 = href.bookAppointment("MTLP0001", "MTLA270224", "Physician");
-            String result5 = href.getAppointmentSchedule("MTLP0001");
-            String result6 = href.cancelAppointment("MTLP0001", "MTLA270224");
+//            String result5 = href.getAppointmentSchedule("MTLP0001");
+//            String result6 = href.cancelAppointment("MTLP0001", "MTLA270224");
             System.out.println(result3);
         } catch (InvalidName invalidName) {
             invalidName.printStackTrace();
