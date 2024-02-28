@@ -19,17 +19,23 @@ public class Server {
             rootpoa.the_POAManager().activate();
 
             // create servant
-            MontrealServer server = new MontrealServer();
+            MontrealServer montrealServer = new MontrealServer();
 
             // get object reference from the servant
-            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(server);
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(montrealServer);
             DHMS href = DHMSHelper.narrow(ref);
 
             org.omg.CORBA.Object objRef =  orb.resolve_initial_references("NameService");
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
-            NameComponent path[] = ncRef.to_name( "ECHO-SERVER" );
+            NameComponent path[] = ncRef.to_name( "MTL-SERVER" );
             ncRef.rebind(path, href);
+
+            QuebecServer quebecServer = new QuebecServer();
+            org.omg.CORBA.Object ref2 = rootpoa.servant_to_reference(quebecServer);
+            DHMS href2 = DHMSHelper.narrow(ref2);
+            NameComponent path2[] = ncRef.to_name( "QUE-SERVER" );
+            ncRef.rebind(path2, href2);
 
             System.out.println("Server ready and waiting ...");
 

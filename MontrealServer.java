@@ -1,9 +1,9 @@
 import DHMSApp.DHMSPOA;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -17,8 +17,10 @@ public class MontrealServer extends DHMSPOA {
         recordList = new LinkedList<>();
         recordOtherCities = new LinkedList<>();
     }
+
+    @Override
     public String hello() {
-        return "Hello, world!";
+        return "Montreal Server says hello!";
     }
 
     @Override
@@ -32,9 +34,11 @@ public class MontrealServer extends DHMSPOA {
             appointmentInner = new HashMap<>();
             appointmentInner.put(appointmentID, capacity);
             appointmentOuter.put(appointmentType, appointmentInner);
+            changeAppointmentData();
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }else{
             appointmentInner.put(appointmentID, capacity);
+            changeAppointmentData();
             log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
         }
         writeLog(log);
@@ -91,10 +95,11 @@ public class MontrealServer extends DHMSPOA {
         if(appointmentInner != null){
             appointmentAll.putAll(appointmentInner);
         }
-//        Map<String, Integer> otherAppointment = getOtherAppointment(appointmentType);
-//        if(otherAppointment != null){
-//            appointmentAll.putAll(otherAppointment);
-//        }
+        Map<String, Integer> otherAppointment = getOtherAppointment(appointmentType);
+        System.out.println(otherAppointment);
+        if(otherAppointment != null){
+            appointmentAll.putAll(otherAppointment);
+        }
         if(appointmentAll.size()!=0){
             log = time + " List appointment availability. Request parameters: " + appointmentType + " Request: success " + "Response: " + appointmentAll.toString();
         }else{
@@ -318,5 +323,102 @@ public class MontrealServer extends DHMSPOA {
 //            recordListAll.addAll(recordListSherbrooke);
 //        }
         return recordListAll;
+    }
+    public static Map<String, Map<String, Integer>> getAppointment() {
+        String filePath = "./data/appointment/Montreal.txt";
+        Map <String, Map<String, Integer>> appointment = new HashMap<>();
+        Map <String, Integer> physician = new HashMap<>();
+        Map <String, Integer> surgeon = new HashMap<>();
+        Map <String, Integer> dental = new HashMap<>();
+        appointment.put("Physician", physician);
+        appointment.put("Surgeon", surgeon);
+        appointment.put("Dental", dental);
+        try{
+            FileReader fileReader = new FileReader(filePath);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null){
+                String [] lineSplit = line.split(" ");
+                String appointmentType = lineSplit[0];
+                String appointmentID = lineSplit[1];
+                int capacity = Integer.parseInt(lineSplit[2]);
+                appointment.get(appointmentType).put(appointmentID, capacity);
+            }
+            bufferedReader.close();
+            fileReader.close();
+            return appointment;
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public void changeAppointmentData(){
+        String filePath = "./data/appointment/Montreal.txt";
+        try{
+            PrintWriter writer = new PrintWriter(filePath);
+            writer.print("");
+            writer.close();
+            FileWriter fileWriter = new FileWriter(filePath, true);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            for (String appointmentType : appointmentOuter.keySet()){
+                for (String appointmentID : appointmentOuter.get(appointmentType).keySet()){
+                    bufferedWriter.write(appointmentType + " " + appointmentID + " " + appointmentOuter.get(appointmentType).get(appointmentID));
+                    bufferedWriter.newLine();
+                }
+            }
+            bufferedWriter.close();
+            fileWriter.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+    public Map<String, Integer> getOtherAppointment(String appointmentType){
+        Map<String, Integer> appointmentOther = new HashMap<>();
+        DatagramSocket socketQUE = null;
+        DatagramSocket socketSHE = null;
+        try {
+            socketQUE = new DatagramSocket();
+            InetAddress address = InetAddress.getByName("localhost");
+            byte[] sendBuffer = appointmentType.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5001);
+            socketQUE.send(sendPacket);
+            // buffer length may need to expand
+            byte[] receiveBuffer = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketQUE.receive(receivePacket);
+            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")){
+                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
+                String [] appointments = receiveDataTrim.split(",");
+                for (String appointment : appointments){
+                    String [] appointmentSplit = appointment.split("=");
+                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
+                }
+            }
+            socketSHE = new DatagramSocket();
+            sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5003);
+            socketSHE.send(sendPacket);
+            receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socketSHE.receive(receivePacket);
+            receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals("Not available")){
+                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
+                String [] appointments = receiveDataTrim.split(",");
+                for (String appointment : appointments){
+                    String [] appointmentSplit = appointment.split("=");
+                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
+                }
+            }
+            return appointmentOther;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(socketQUE != null){
+                socketQUE.close();
+            }
+            if(socketSHE != null){
+                socketSHE.close();
+            }
+        }
     }
 }
