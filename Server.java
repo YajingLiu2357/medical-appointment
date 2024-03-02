@@ -24,17 +24,23 @@ public class Server {
             org.omg.CORBA.Object ref = rootpoa.servant_to_reference(montrealServer);
             DHMS href = DHMSHelper.narrow(ref);
 
-            org.omg.CORBA.Object objRef =  orb.resolve_initial_references("NameService");
+            org.omg.CORBA.Object objRef =  orb.resolve_initial_references(Constants.NAME_SERVICE);
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 
-            NameComponent path[] = ncRef.to_name( "MTL" );
+            NameComponent path[] = ncRef.to_name(Constants.MTL);
             ncRef.rebind(path, href);
 
             QuebecServer quebecServer = new QuebecServer();
             org.omg.CORBA.Object ref2 = rootpoa.servant_to_reference(quebecServer);
             DHMS href2 = DHMSHelper.narrow(ref2);
-            NameComponent path2[] = ncRef.to_name( "QUE" );
+            NameComponent path2[] = ncRef.to_name(Constants.QUE);
             ncRef.rebind(path2, href2);
+
+            SherbrookeServer sherbrookeServer = new SherbrookeServer();
+            org.omg.CORBA.Object ref3 = rootpoa.servant_to_reference(sherbrookeServer);
+            DHMS href3 = DHMSHelper.narrow(ref3);
+            NameComponent path3[] = ncRef.to_name(Constants.SHE);
+            ncRef.rebind(path3, href3);
 
             System.out.println("Server ready and waiting ...");
 

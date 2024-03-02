@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.Map;
 
 public class ReplyAppointment extends Thread{
@@ -24,11 +23,22 @@ public class ReplyAppointment extends Thread{
                 String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 Map<String, Integer> appointment;
                 if (receivePacket.getData() != null){
-                    // TODO: May not QuebecServer
-                    appointment = QuebecServer.getAppointment().get(appointmentType);
+                    switch (portNum){
+                        case Constants.QUE_APPOINTMENT_PORT:
+                            appointment = QuebecServer.getAppointment().get(appointmentType);
+                            break;
+                        case Constants.MTL_APPOINTMENT_PORT:
+                            appointment = MontrealServer.getAppointment().get(appointmentType);
+                            break;
+                        case Constants.SHE_APPOINTMENT_PORT:
+                            appointment = SherbrookeServer.getAppointment().get(appointmentType);
+                            break;
+                        default:
+                            appointment = null;
+                    }
                     String reply = "";
-                    if(appointment == null){
-                        reply = "Not available";
+                    if(appointment == null || appointment.size() == 0){
+                        reply = Constants.NOT_AVAILABLE;
                     }else{
                         reply = appointment.toString();
                     }
@@ -36,8 +46,6 @@ public class ReplyAppointment extends Thread{
                     socket.send(replyPacket);
                 }
             }
-        }catch (SocketException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

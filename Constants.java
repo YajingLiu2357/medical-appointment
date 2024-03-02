@@ -23,8 +23,8 @@ public final class Constants {
     public static final String HAVE_SAME_TYPE_APPOINTMENT_SAME_DAY = "fail because patient cannot book same type of appointment on the same day";
     public static final String THREE_APPOINTMENTS_OTHER_CITIES = "fail because patient cannot book more than 3 appointments from other cities";
     public static final String NO_CAPACITY = "fail because appointment does not exist or no capacity";
-    public static final String BOOK = "book ";
-    public static final String CANCEL = "cancel ";
+    public static final String BOOK = "book";
+    public static final String CANCEL = "cancel";
     public static final String RECORD = "record";
     public static final String GET_APPOINTMENT_SCHEDULE = " Get appointment schedule. ";
     public static final String NO_APPOINTMENT = "fail because patient has no appointment";
@@ -32,10 +32,13 @@ public final class Constants {
 
     public static final String LOCALHOST = "localhost";
     public static final String QUE_APPOINTMENT_PORT = "5001";
-    public static final String QUE_RECORD_PORT = "5004";
-    public static final String QUE_BOOK_CANCEL_PORT = "5007";
+    public static final String MTL_APPOINTMENT_PORT = "5002";
     public static final String SHE_APPOINTMENT_PORT = "5003";
-    public static final String SHE_RECORD_PORT = "5005";
+    public static final String QUE_RECORD_PORT = "5004";
+    public static final String MTL_RECORD_PORT = "5005";
+    public static final String SHE_RECORD_PORT = "5006";
+    public static final String QUE_BOOK_CANCEL_PORT = "5007";
+    public static final String MTL_BOOK_CANCEL_PORT = "5008";
     public static final String SHE_BOOK_CANCEL_PORT = "5009";
 
     public static final String SPACE = " ";
@@ -51,4 +54,6 @@ public final class Constants {
     public static final String PHYSICIAN = "Physician";
     public static final String SURGEON = "Surgeon";
     public static final String DENTAL = "Dental";
+
+    public static final String NAME_SERVICE = "NameService";
 }

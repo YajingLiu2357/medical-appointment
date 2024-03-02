@@ -14,31 +14,27 @@ public class Client {
         try {
             // create and initialize the ORB
             ORB orb = ORB.init(args, null);
-            org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+            org.omg.CORBA.Object objRef = orb.resolve_initial_references(Constants.NAME_SERVICE);
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
-            DHMS href = DHMSHelper.narrow(ncRef.resolve_str("MTL"));
-            DHMS href2 = DHMSHelper.narrow(ncRef.resolve_str("QUE"));
+            DHMS href = DHMSHelper.narrow(ncRef.resolve_str(Constants.MTL));
+            DHMS href2 = DHMSHelper.narrow(ncRef.resolve_str(Constants.QUE));
+            DHMS href3 = DHMSHelper.narrow(ncRef.resolve_str(Constants.SHE));
 //            String hello = href2.hello();
 //            System.out.println(hello);
             String result = href2.addAppointment("QUEA270224", "Physician", 4);
             //String result2 = href.removeAppointment("MTLA270224", "Physician");
-//            String result3 = href.listAppointmentAvailability("Physician");
-//            String test = href2.bookAppointment("QUEP0001", "QUEA270224", "Physician");
-//            System.out.println(test);
+            String result3 = href2.listAppointmentAvailability("Physician");
+            String test = href2.bookAppointment("QUEP0001", "QUEA270224", "Physician");
+            System.out.println(test);
+            String result5 = href2.getAppointmentSchedule("QUEP0001");
             String result4 = href.bookAppointment("MTLP0001", "QUEA270224", "Physician");
-            String result7 = href.cancelAppointment("MTLP0001", "QUEA270224");
+            String result7 = href2.cancelAppointment("QUEP0001", "QUEA270224");
 //            String result5 = href.getAppointmentSchedule("MTLP0001");
 //            String result6 = href.cancelAppointment("MTLP0001", "MTLA270224");
             System.out.println(result4);
             System.out.println(result7);
-        } catch (InvalidName invalidName) {
-            invalidName.printStackTrace();
-        } catch (CannotProceed cannotProceed) {
-            cannotProceed.printStackTrace();
-        } catch (org.omg.CosNaming.NamingContextPackage.InvalidName invalidName) {
-            invalidName.printStackTrace();
-        } catch (NotFound notFound) {
-            notFound.printStackTrace();
+        } catch (InvalidName | CannotProceed | org.omg.CosNaming.NamingContextPackage.InvalidName | NotFound e) {
+            e.printStackTrace();
         }
 
     }

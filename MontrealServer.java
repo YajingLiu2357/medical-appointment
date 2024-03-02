@@ -1,9 +1,18 @@
+import DHMSApp.DHMS;
+import DHMSApp.DHMSHelper;
 import DHMSApp.DHMSPOA;
+import org.omg.CORBA.ORB;
+import org.omg.CORBA.ORBPackage.InvalidName;
+import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.CosNaming.NamingContextPackage.CannotProceed;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -305,7 +314,7 @@ public class MontrealServer extends DHMSPOA {
             FileReader fileReader = new FileReader(filePath);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             String line;
-            while ((line = bufferedReader.readLine()) != null){
+            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
                 String [] lineSplit = line.split(Constants.SPACE);
                 String appointmentType = lineSplit[0];
                 String appointmentID = lineSplit[1];
@@ -365,7 +374,7 @@ public class MontrealServer extends DHMSPOA {
             FileReader fileReader = new FileReader(filePath);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             String line;
-            while ((line = bufferedReader.readLine()) != null){
+            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
                 recordList.add(line);
             }
             bufferedReader.close();
@@ -411,7 +420,7 @@ public class MontrealServer extends DHMSPOA {
         try {
             socket = new DatagramSocket();
             InetAddress address = InetAddress.getByName(Constants.LOCALHOST);
-            String sendData = bookCancel + patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
+            String sendData = bookCancel + Constants.SPACE + patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
             byte[] sendBuffer = sendData.getBytes();
             DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, Integer.parseInt(portNum));
             socket.send(sendPacket);
@@ -504,5 +513,43 @@ public class MontrealServer extends DHMSPOA {
             }
         }
         return recordListOther;
+    }
+    public static void main(String[] args) throws SocketException {
+        ReplyAppointment replyAppointment = new ReplyAppointment(Constants.MTL_APPOINTMENT_PORT);
+        replyAppointment.start();
+        ReplyRecord replyRecord = new ReplyRecord(Constants.MTL_RECORD_PORT);
+        replyRecord.start();
+        DatagramSocket socket = new DatagramSocket(Integer.parseInt(Constants.MTL_BOOK_CANCEL_PORT));
+        try{
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket;
+            while(true){
+                receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                socket.receive(receivePacket);
+                InetAddress addressBook = receivePacket.getAddress();
+                int portBook = receivePacket.getPort();
+                String [] bookData = new String(receivePacket.getData(),0, receivePacket.getLength()).split(Constants.SPACE);
+                String bookCancel = bookData[0];
+                String patientID = bookData[1];
+                String appointmentID = bookData[2];
+                ORB orb = ORB.init(args, null);
+                org.omg.CORBA.Object objRef = orb.resolve_initial_references(Constants.NAME_SERVICE);
+                NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+                DHMS href = DHMSHelper.narrow(ncRef.resolve_str(Constants.MTL));
+                if (bookCancel.equals(Constants.BOOK)){
+                    String appointmentType = bookData[3];
+                    String log = href.bookAppointment(patientID, appointmentID, appointmentType);
+                    DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
+                    socket.send(replyPacketBook);
+                }else if (bookCancel.equals(Constants.CANCEL)){
+                    String log = href.cancelAppointment(patientID, appointmentID);
+                    DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
+                    socket.send(replyPacketBook);
+                }
+            }
+        } catch(IOException | InvalidName | CannotProceed | org.omg.CosNaming.NamingContextPackage.InvalidName |
+                NotFound e){
+            e.printStackTrace();
+        }
     }
 }

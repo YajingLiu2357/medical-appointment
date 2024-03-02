@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.List;
 
 public class ReplyRecord extends Thread{
@@ -16,25 +15,36 @@ public class ReplyRecord extends Thread{
             DatagramSocket socket = new DatagramSocket(Integer.parseInt(portNum));
             byte[] receiveData = new byte[1024];
             DatagramPacket receivePacket;
-            receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            socket.receive(receivePacket);
-            InetAddress addressRecord = receivePacket.getAddress();
-            int portRecord = receivePacket.getPort();
-            List<String> recordList;
-            if (receivePacket.getData() != null){
-                // TODO: May not QuebecServer
-                recordList = QuebecServer.getRecordList();
-                String replyRecord = "";
-                if(recordList.size() == 0){
-                    replyRecord = "Not available";
-                }else{
-                    replyRecord = recordList.toString();
+            while (true){
+                receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                socket.receive(receivePacket);
+                InetAddress addressRecord = receivePacket.getAddress();
+                int portRecord = receivePacket.getPort();
+                List<String> recordList;
+                if (receivePacket.getData() != null){
+                    switch (portNum){
+                        case Constants.QUE_RECORD_PORT:
+                            recordList = QuebecServer.getRecordList();
+                            break;
+                        case Constants.MTL_RECORD_PORT:
+                            recordList = MontrealServer.getRecordList();
+                            break;
+                        case Constants.SHE_RECORD_PORT:
+                            recordList = SherbrookeServer.getRecordList();
+                            break;
+                        default:
+                            recordList = null;
+                    }
+                    String replyRecord = "";
+                    if(recordList.size() == 0){
+                        replyRecord = Constants.NOT_AVAILABLE;
+                    }else{
+                        replyRecord = recordList.toString();
+                    }
+                    DatagramPacket replyPacketRecord = new DatagramPacket(replyRecord.getBytes(), replyRecord.length(), addressRecord, portRecord);
+                    socket.send(replyPacketRecord);
                 }
-                DatagramPacket replyPacketRecord = new DatagramPacket(replyRecord.getBytes(), replyRecord.length(), addressRecord, portRecord);
-                socket.send(replyPacketRecord);
             }
-        } catch (SocketException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
