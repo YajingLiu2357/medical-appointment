@@ -25,10 +25,8 @@ public class SherbrookeServer extends DHMSPOA {
         appointmentOuter = getAppointment();
         recordList = getRecordList();
         recordOtherCities = new ArrayList<>();
-    }
-    @Override
-    public String hello() {
-        return "Sherbrooke Server says hello!";
+        changeAppointmentData();
+        changeRecordData();
     }
 
     @Override
@@ -233,7 +231,44 @@ public class SherbrookeServer extends DHMSPOA {
 
     @Override
     public String swapAppointment(String patientID, String oldAppointmentID, String oldAppointmentType, String newAppointmentID, String newAppointmentType) {
-        return null;
+        boolean oldAppointmentExist = false;
+        boolean newAppointmentAvailable = false;
+        String time = getTime();
+        String log = "";
+        for (String record : recordList){
+            String [] recordSplit = record.split(Constants.SPACE);
+            if (recordSplit[0].equals(patientID) && recordSplit[1].equals(oldAppointmentID) && recordSplit[2].equals(oldAppointmentType)){
+                oldAppointmentExist = true;
+                break;
+            }
+        }
+        if (!oldAppointmentExist){
+            log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.APPOINTMENT_NOT_EXIST;
+            writeLog(log);
+            return log;
+        }
+        String serverName = newAppointmentID.substring(0,3);
+        if (serverName.equals(Constants.QUE)){
+            Map<String, Integer> queAppointment = getOtherAppointment(newAppointmentType, Constants.QUE_APPOINTMENT_PORT);
+            if (queAppointment.size() != 0 && queAppointment.containsKey(newAppointmentID) && queAppointment.get(newAppointmentID) > 0){
+                newAppointmentAvailable = true;
+            }
+        }else if (serverName.equals(Constants.MTL)){
+            Map<String, Integer> sheAppointment = getOtherAppointment(newAppointmentType, Constants.MTL_APPOINTMENT_PORT);
+            if (sheAppointment.size() != 0 && sheAppointment.containsKey(newAppointmentID) && sheAppointment.get(newAppointmentID) > 0){
+                newAppointmentAvailable = true;
+            }
+        }
+        if (!newAppointmentAvailable){
+            log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.NO_CAPACITY;
+            writeLog(log);
+            return log;
+        }
+        cancelAppointment(patientID, oldAppointmentID);
+        bookAppointment(patientID, newAppointmentID, newAppointmentType);
+        log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.SUCCESS;
+        writeLog(log);
+        return log;
     }
     public static Map<String, Map<String, Integer>> getAppointment() {
         String filePath = Constants.DATA_APPOINTMENT + Constants.SHERBROOKE_TXT;
@@ -282,7 +317,7 @@ public class SherbrookeServer extends DHMSPOA {
         return null;
     }
     public String getTime(){
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(Constants.TIME_FORMAT);
         LocalDateTime now = LocalDateTime.now();
         return dtf.format(now);
     }

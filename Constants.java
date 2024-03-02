@@ -29,6 +29,7 @@ public final class Constants {
     public static final String GET_APPOINTMENT_SCHEDULE = " Get appointment schedule. ";
     public static final String NO_APPOINTMENT = "fail because patient has no appointment";
     public static final String CANCEL_APPOINTMENT = " Cancel appointment. ";
+    public static final String SWAP_APPOINTMENT  = " Swap appointment. ";
 
     public static final String LOCALHOST = "localhost";
     public static final String QUE_APPOINTMENT_PORT = "5001";
@@ -56,4 +57,6 @@ public final class Constants {
     public static final String DENTAL = "Dental";
 
     public static final String NAME_SERVICE = "NameService";
+
+    public static final String TIME_FORMAT = "yyyy/MM/dd HH:mm:ss";
 }
