@@ -1,6 +1,5 @@
 module DHMSApp {
     interface DHMS {
-    string hello();
     string addAppointment(in string appointmentID, in string appointmentType, in long capacity);
     string removeAppointment(in string appointmentID, in string appointmentType);
     string listAppointmentAvailability (in string appointmentType);

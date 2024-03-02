@@ -536,7 +536,7 @@ public class MontrealServer extends DHMSPOA {
                 String receiveDataTrim = receiveData.replaceAll("\\[", "").replaceAll("\\]", "");
                 String [] records = receiveDataTrim.split(",");
                 for (String record : records){
-                    recordListOther.add(record);
+                    recordListOther.add(record.replaceFirst("^\\s*", ""));
                 }
             }
         } catch (IOException e) {
