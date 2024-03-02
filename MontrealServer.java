@@ -198,13 +198,40 @@ public class MontrealServer extends DHMSPOA {
 //            rmi.AppointmentInterface server = (rmi.AppointmentInterface) registry.lookup(serverName);
 //            String log = server.bookAppointment(patientID, appointmentID, appointmentType);
 //            writeLog(log);
+            String serverName = appointmentID.substring(0,3);
+            if (serverName.equals("QUE")){
+                DatagramSocket socketQUE = null;
+                try {
+                    socketQUE = new DatagramSocket();
+                    InetAddress address = InetAddress.getByName("localhost");
+                    String sendData = "book " + patientID + " " + appointmentID + " " + appointmentType;
+                    byte[] sendBuffer = sendData.getBytes();
+                    DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, 5007);
+                    socketQUE.send(sendPacket);
+                    // buffer length may need to expand
+                    byte[] receiveBuffer = new byte[1024];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+                    socketQUE.receive(receivePacket);
+                    String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    if (!receiveData.equals("Not available")) {
+                        return receiveData;
+                    }
+                } catch(IOException e){
+                    e.printStackTrace();
+                } finally{
+                    if(socketQUE != null){
+                        socketQUE.close();
+                    }
+                }
+            }else if (serverName.equals("SHE")){
+
+            }
             return null;
         }
     }
 
     @Override
     public String getAppointmentSchedule(String patientID) {
-        // TODO: get other cities' appointment schedule
         String time = getTime();
         List<String> schedule = new LinkedList<>();
         List<String> recordAllList = getAllRecordList();
@@ -250,6 +277,34 @@ public class MontrealServer extends DHMSPOA {
 //            String log = server.cancelAppointment(patientID, appointmentID);
 //            writeLog(log);
 //            return log;
+            String serverName = appointmentID.substring(0,3);
+            if (serverName.equals("QUE")){
+                DatagramSocket socketQUE = null;
+                try {
+                    socketQUE = new DatagramSocket();
+                    InetAddress address = InetAddress.getByName("localhost");
+                    String sendData = "cancel " + patientID + " " + appointmentID;
+                    byte[] sendBuffer = sendData.getBytes();
+                    DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, 5007);
+                    socketQUE.send(sendPacket);
+                    // buffer length may need to expand
+                    byte[] receiveBuffer = new byte[1024];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+                    socketQUE.receive(receivePacket);
+                    String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    if (!receiveData.equals("Not available")) {
+                        return receiveData;
+                    }
+                } catch(IOException e){
+                    e.printStackTrace();
+                } finally{
+                    if(socketQUE != null){
+                        socketQUE.close();
+                    }
+                }
+            }else if (serverName.equals("SHE")){
+
+            }
             return null;
         }
     }
@@ -318,9 +373,11 @@ public class MontrealServer extends DHMSPOA {
         try {
             socketQUE = new DatagramSocket();
             InetAddress address = InetAddress.getByName("localhost");
-            byte[] sendBuffer = new byte[1024];
+            byte[] sendBuffer = "record".getBytes();
             DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, 5004);
+            System.out.println("send record 350");
             socketQUE.send(sendPacket);
+            System.out.println("send record 352");
             // buffer length may need to expand
             byte[] receiveBuffer = new byte[1024];
             DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);

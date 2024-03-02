@@ -129,7 +129,7 @@ public class SherbrookeServer extends DHMSPOA {
                 InetAddress addressRecord = receivePacketRecord.getAddress();
                 int portRecord = receivePacketRecord.getPort();
                 List<String> recordList;
-                if (addressRecord != null){
+                if (receivePacketRecord.getData() != null){
                     recordList = getRecordList();
                     String replyRecord = "";
                     if(recordList.size() == 0){

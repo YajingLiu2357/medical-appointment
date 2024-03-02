@@ -1,5 +1,13 @@
 
+import DHMSApp.DHMS;
+import DHMSApp.DHMSHelper;
 import DHMSApp.DHMSPOA;
+import org.omg.CORBA.ORB;
+import org.omg.CORBA.ORBPackage.InvalidName;
+import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.CosNaming.NamingContextPackage.CannotProceed;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import rmi.AppointmentInterface;
 
 import java.io.*;
@@ -10,10 +18,9 @@ import java.net.SocketException;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 public class QuebecServer extends DHMSPOA {
     private Map<String, Map<String, Integer>> appointmentOuter;
@@ -32,7 +39,24 @@ public class QuebecServer extends DHMSPOA {
 
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) {
-        return null;
+        String time = getTime();
+        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        String log = "";
+        if (appointmentInner != null && appointmentInner.containsKey(appointmentID)){
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: fail because appointment already exists";
+        }else if (appointmentInner == null){
+            appointmentInner = new HashMap<>();
+            appointmentInner.put(appointmentID, capacity);
+            appointmentOuter.put(appointmentType, appointmentInner);
+            changeAppointmentData();
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
+        }else{
+            appointmentInner.put(appointmentID, capacity);
+            changeAppointmentData();
+            log = time + " Add appointment. Request parameters: " + appointmentID + " " + appointmentType + " " + capacity + " Request: success " + "Response: success";
+        }
+        writeLog(log);
+        return log;
     }
 
     @Override
@@ -47,7 +71,93 @@ public class QuebecServer extends DHMSPOA {
 
     @Override
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
-        return null;
+        if (appointmentID.startsWith("QUE")){
+            String time = getTime();
+            Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+            String log = "";
+            List<String>  recordAllList = getAllRecordList();
+            if(appointmentInner != null && appointmentInner.containsKey(appointmentID) && appointmentInner.get(appointmentID) > 0){
+                for (String record : recordAllList){
+                    String [] recordSplit = record.split(" ");
+                    if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient already has appointment";
+                        writeLog(log);
+                        return log;
+                    }
+                    if(recordSplit[0].equals(patientID) && recordSplit[2].equals(appointmentType) && recordSplit[1].substring(4,10).equals(appointmentID.substring(4,10))){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient cannot book same type of appointment on the same day";
+                        writeLog(log);
+                        return log;
+                    }
+                    if(!recordSplit[0].substring(0, 3).equals(recordSplit[1].substring(0,3))){
+                        recordOtherCities.add(record);
+                    }
+                }
+                if (recordOtherCities.size() > 3){
+                    int earliestDay = Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(4,6));
+                    int earliestMonth = Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(6,8));
+                    int earliestYear = 2000 + Integer.parseInt(recordOtherCities.get(0).split(" ")[1].substring(8,10));
+                    Calendar earliestDate = Calendar.getInstance();
+                    earliestDate.set(earliestYear, earliestMonth - 1 , earliestDay, 0, 0);
+                    for (String record : recordOtherCities){
+                        String [] recordSplit = record.split(" ");
+                        if (recordSplit[0].equals(patientID)){
+                            int day = Integer.parseInt(recordSplit[1].substring(4,6));
+                            int month = Integer.parseInt(recordSplit[1].substring(6,8));
+                            int year = Integer.parseInt(recordSplit[1].substring(8,10));
+                            if (year < earliestYear){
+                                earliestYear = year;
+                                earliestMonth = month;
+                                earliestDay = day;
+                            }else if (year == earliestYear && month < earliestMonth){
+                                earliestMonth = month;
+                                earliestDay = day;
+                            }else if (year == earliestYear && month == earliestMonth && day < earliestDay){
+                                earliestDay = day;
+                            }
+                        }
+                    }
+                    int count = 0;
+                    for (String record : recordOtherCities){
+                        String [] recordSplit = record.split(" ");
+                        if (recordSplit[0].equals(patientID)){
+                            int day = Integer.parseInt(recordSplit[1].substring(4,6));
+                            int month = Integer.parseInt(recordSplit[1].substring(6,8));
+                            int year = Integer.parseInt(recordSplit[1].substring(8,10));
+                            Calendar tempDate = Calendar.getInstance();
+                            tempDate.set(year, month - 1 , day, 0, 0);
+                            long diff = tempDate.getTimeInMillis() - earliestDate.getTimeInMillis();
+                            long diffDays = diff / (24 * 60 * 60 * 1000);
+                            if (diffDays <= 7){
+                                count++;
+                            }
+                        }
+                    }
+                    if (count > 3){
+                        log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because patient cannot book more than 3 appointments from other cities";
+                        writeLog(log);
+                        return log;
+                    }
+                }
+                synchronized (this){
+                    appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
+                    String bookRecord = patientID + " " + appointmentID + " " + appointmentType;
+                    recordList.add(bookRecord);
+                    log = time + " Book appointment. Request parameters: " + bookRecord + " Request: success " + "Response: success";
+                }
+            }else{
+                log = time + " Book appointment. Request parameters: " + patientID + " " + appointmentID + " " + appointmentType + " Request: success " + "Response: fail because appointment does not exist or no capacity";
+            }
+            writeLog(log);
+            return log;
+        }else{
+//            Registry registry = LocateRegistry.getRegistry(1099);
+//            String serverName = appointmentID.substring(0,3);
+//            AppointmentInterface server = (AppointmentInterface) registry.lookup(serverName);
+//            String log = server.bookAppointment(patientID, appointmentID, appointmentType);
+//            writeLog(log);
+            return null;
+        }
     }
 
     @Override
@@ -57,7 +167,32 @@ public class QuebecServer extends DHMSPOA {
 
     @Override
     public String cancelAppointment(String patientID, String appointmentID) {
-        return null;
+        if (appointmentID.startsWith("QUE")){
+            String time = getTime();
+            String log = "";
+            for (String record : recordList){
+                String [] recordSplit = record.split(" ");
+                if(recordSplit[0].equals(patientID) && recordSplit[1].equals(appointmentID)){
+                    recordList.remove(record);
+                    appointmentOuter.get(recordSplit[2]).put(appointmentID, appointmentOuter.get(recordSplit[2]).get(appointmentID) + 1);
+                    log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: success";
+                    writeLog(log);
+                    return log;
+                }
+            }
+            log = time + " Cancel appointment. Request parameters: " + patientID + " " + appointmentID + " Request: success " + "Response: fail because appointment does not exist";
+            writeLog(log);
+            return log;
+        }else {
+            // TODO: cancel appointment from other cities
+//            Registry registry = LocateRegistry.getRegistry(1099);
+//            String serverName = appointmentID.substring(0,3);
+//            rmi.AppointmentInterface server = (rmi.AppointmentInterface) registry.lookup(serverName);
+//            String log = server.cancelAppointment(patientID, appointmentID);
+//            writeLog(log);
+//            return log;
+            return null;
+        }
     }
 
     @Override
@@ -142,56 +277,132 @@ public class QuebecServer extends DHMSPOA {
         }
         return null;
     }
+    public void writeLog(String log){
+        String path = "./logs/server/Montreal.txt";
+        try{
+            File file = new File(path);
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWriter = new FileWriter(path, true);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(log);
+            bufferedWriter.newLine();
+            bufferedWriter.close();
+            fileWriter.close();
+            System.out.println(log);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+    public List<String> getAllRecordList(){
+        // TODO: get MTL record list
+        List<String> recordListAll = new LinkedList<>();
+        if (recordList != null){
+            recordListAll.addAll(recordList);
+        }
+//        DatagramSocket socketMTL = null;
+//        DatagramSocket socketSHE = null;
+//        try {
+////            socketMTL = new DatagramSocket();
+////            InetAddress address = InetAddress.getByName("localhost");
+////            byte[] sendBuffer = new byte[1024];
+////            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, 5006);
+////            socketMTL.send(sendPacket);
+////            // buffer length may need to expand
+////            byte[] receiveBuffer = new byte[1024];
+////            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+////            socketMTL.receive(receivePacket);
+////            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+////            if (!receiveData.equals("Not available")) {
+////                String receiveDataTrim = receiveData.replaceAll("\\[", "").replaceAll("\\]", "");
+////                String [] records = receiveDataTrim.split(",");
+////                for (String record : records){
+////                    recordListAll.add(record);
+////                }
+////            }
+////            socketSHE = new DatagramSocket();
+//            InetAddress address = InetAddress.getByName("localhost");
+//            byte[] sendBuffer = "record".getBytes();
+//            byte[] receiveBuffer = new byte[1024];
+//            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address,5005);
+//            socketSHE.send(sendPacket);
+//            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+//            socketSHE.receive(receivePacket);
+//            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+//            if (!receiveData.equals("Not available")) {
+//                String receiveDataTrim = receiveData.replaceAll("\\[", "").replaceAll("\\]", "");
+//                String [] records = receiveDataTrim.split(",");
+//                for (String record : records){
+//                    recordListAll.add(record);
+//                }
+//            }
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        } finally {
+//            if(socketMTL != null){
+//                socketMTL.close();
+//            }
+//            if(socketSHE != null){
+//                socketSHE.close();
+//            }
+//        }
+        return recordListAll;
+    }
+    public String getTime(){
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        return dtf.format(now);
+    }
     public static void main(String[] args) throws SocketException {
-        DatagramSocket socket = new DatagramSocket(Integer.parseInt("5001"));
-        DatagramSocket socketRecord = new DatagramSocket(Integer.parseInt("5004"));
+        ReplyAppointment replyAppointment = new ReplyAppointment("5001");
+        replyAppointment.start();
+        ReplyRecord replyRecord = new ReplyRecord("5004");
+        replyRecord.start();
+        DatagramSocket socket = new DatagramSocket(Integer.parseInt("5007"));
         try{
             byte[] receiveData = new byte[1024];
             DatagramPacket receivePacket;
-            byte[] receiveDataRecord = new byte[1024];
-            DatagramPacket receivePacketRecord;
             while(true){
                 receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 socket.receive(receivePacket);
-                InetAddress address = receivePacket.getAddress();
-                int port = receivePacket.getPort();
-                String appointmentType = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                Map<String, Integer> appointment;
-                if (receivePacket.getData() != null){
-                    appointment = getAppointment().get(appointmentType);
-                    String reply = "";
-                    if(appointment == null){
-                        reply = "Not available";
-                    }else{
-                        reply = appointment.toString();
-                    }
-                    DatagramPacket replyPacket = new DatagramPacket(reply.getBytes(), reply.length(), address, port);
-                    socket.send(replyPacket);
-                }
-                receivePacketRecord = new DatagramPacket(receiveDataRecord, receiveDataRecord.length);
-                socketRecord.receive(receivePacketRecord);
-                InetAddress addressRecord = receivePacketRecord.getAddress();
-                int portRecord = receivePacketRecord.getPort();
-                List<String> recordList;
-                if (addressRecord != null){
-                    recordList = getRecordList();
-                    String replyRecord = "";
-                    if(recordList.size() == 0){
-                        replyRecord = "Not available";
-                    }else{
-                        replyRecord = recordList.toString();
-                    }
-                    DatagramPacket replyPacketRecord = new DatagramPacket(replyRecord.getBytes(), replyRecord.length(), addressRecord, portRecord);
-                    socketRecord.send(replyPacketRecord);
+                InetAddress addressBook = receivePacket.getAddress();
+                int portBook = receivePacket.getPort();
+                String [] bookData = new String(receivePacket.getData(),0, receivePacket.getLength()).split(" ");
+                String bookCancel = bookData[0];
+                if (bookCancel.equals("book")){
+                    String patientID = bookData[1];
+                    String appointmentID = bookData[2];
+                    String appointmentType = bookData[3];
+                    ORB orb = ORB.init(args, null);
+                    org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+                    NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+                    DHMS href = DHMSHelper.narrow(ncRef.resolve_str("QUE"));
+                    String log = href.bookAppointment(patientID, appointmentID, appointmentType);
+                    DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
+                    socket.send(replyPacketBook);
+                }else if (bookCancel.equals("cancel")){
+                    String patientID = bookData[1];
+                    String appointmentID = bookData[2];
+                    ORB orb = ORB.init(args, null);
+                    org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+                    NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+                    DHMS href = DHMSHelper.narrow(ncRef.resolve_str("QUE"));
+                    String log = href.cancelAppointment(patientID, appointmentID);
+                    DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
+                    socket.send(replyPacketBook);
                 }
             }
         } catch(IOException e){
             e.printStackTrace();
-        } finally{
-            if(socket != null){
-                socket.close();
-            }
+        } catch (InvalidName invalidName) {
+            invalidName.printStackTrace();
+        } catch (CannotProceed cannotProceed) {
+            cannotProceed.printStackTrace();
+        } catch (org.omg.CosNaming.NamingContextPackage.InvalidName invalidName) {
+            invalidName.printStackTrace();
+        } catch (NotFound notFound) {
+            notFound.printStackTrace();
         }
     }
-
 }
