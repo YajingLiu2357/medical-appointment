@@ -11,22 +11,15 @@ public class Server {
 
     public static void main(String args[]) {
         try{
-            // create and initialize the ORB
             ORB orb = ORB.init(args, null);
-
-            // get reference to rootpoa & activate the POAManager
             POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
             rootpoa.the_POAManager().activate();
-            // create servant
-            MontrealServer montrealServer = new MontrealServer();
 
-            // get object reference from the servant
+            MontrealServer montrealServer = new MontrealServer();
             org.omg.CORBA.Object ref = rootpoa.servant_to_reference(montrealServer);
             DHMS href = DHMSHelper.narrow(ref);
-
             org.omg.CORBA.Object objRef =  orb.resolve_initial_references(Constants.NAME_SERVICE);
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
-
             NameComponent path[] = ncRef.to_name(Constants.MTL);
             ncRef.rebind(path, href);
 
@@ -41,6 +34,7 @@ public class Server {
             DHMS href3 = DHMSHelper.narrow(ref3);
             NameComponent path3[] = ncRef.to_name(Constants.SHE);
             ncRef.rebind(path3, href3);
+
 
             System.out.println("Server ready and waiting ...");
 

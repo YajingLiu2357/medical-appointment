@@ -24,8 +24,8 @@ public class QuebecServer extends DHMSPOA {
     private List<String> recordOtherCities;
     protected QuebecServer(){
         appointmentOuter = new HashMap<>();
-        recordList = new ArrayList<>();
-        recordOtherCities = new ArrayList<>();
+        recordList = new LinkedList<>();
+        recordOtherCities = new LinkedList<>();
         changeAppointmentData();
         changeRecordData();
     }

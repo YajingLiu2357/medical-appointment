@@ -22,9 +22,9 @@ public class SherbrookeServer extends DHMSPOA {
     private List<String> recordList;
     private List<String> recordOtherCities;
     public SherbrookeServer(){
-        appointmentOuter = getAppointment();
-        recordList = getRecordList();
-        recordOtherCities = new ArrayList<>();
+        appointmentOuter = new HashMap<>();
+        recordList = new LinkedList<>();
+        recordOtherCities = new LinkedList<>();
         changeAppointmentData();
         changeRecordData();
     }
@@ -34,6 +34,7 @@ public class SherbrookeServer extends DHMSPOA {
         String time = getTime();
         Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
+        System.out.println("appointmentInner: " + appointmentInner);
         if (appointmentInner != null && appointmentInner.containsKey(appointmentID)){
             log = time + Constants.ADD_APPOINTMENT + Constants.REQUEST_PARAMETERS + appointmentID + Constants.SPACE + appointmentType + Constants.SPACE + capacity + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.APPOINTMENT_ALREADY_EXISTS;
         }else{
