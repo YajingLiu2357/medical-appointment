@@ -17,15 +17,16 @@ import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class QuebecServer extends DHMSPOA {
-    private Map<String, Map<String, Integer>> appointmentOuter;
+    private ConcurrentHashMap <String, ConcurrentHashMap<String, Integer>> appointmentOuter;
     private List<String> recordList;
     private List<String> recordOtherCities;
     protected QuebecServer(){
-        appointmentOuter = new HashMap<>();
-        recordList = new LinkedList<>();
-        recordOtherCities = new LinkedList<>();
+        appointmentOuter = new ConcurrentHashMap<>();
+        recordList = Collections.synchronizedList(new LinkedList<>());
+        recordOtherCities = Collections.synchronizedList(new LinkedList<>());
         changeAppointmentData();
         changeRecordData();
     }
@@ -33,13 +34,13 @@ public class QuebecServer extends DHMSPOA {
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         if (appointmentInner != null && appointmentInner.containsKey(appointmentID)){
             log = time + Constants.ADD_APPOINTMENT + Constants.REQUEST_PARAMETERS + appointmentID + Constants.SPACE + appointmentType + Constants.SPACE + capacity + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.APPOINTMENT_ALREADY_EXISTS;
         }else{
             if (appointmentInner == null){
-                appointmentInner = new HashMap<>();
+                appointmentInner = new ConcurrentHashMap<>();
                 appointmentInner.put(appointmentID, capacity);
                 appointmentOuter.put(appointmentType, appointmentInner);
             }
@@ -56,7 +57,7 @@ public class QuebecServer extends DHMSPOA {
     @Override
     public String removeAppointment(String appointmentID, String appointmentType) {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         if(appointmentInner != null && appointmentInner.containsKey(appointmentID)){
             for (String record : recordList){
@@ -100,7 +101,7 @@ public class QuebecServer extends DHMSPOA {
     @Override
     public String listAppointmentAvailability(String appointmentType) {
         String time = getTime();
-        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         String log = "";
         Map<String, Integer> appointmentAll = new HashMap<>();
         if(appointmentInner != null){
@@ -127,7 +128,7 @@ public class QuebecServer extends DHMSPOA {
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
         if (appointmentID.startsWith(Constants.QUE)){
             String time = getTime();
-            Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+            ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
             String log = "";
             List<String>  recordAllList = getAllRecordList();
             if(appointmentInner != null && appointmentInner.containsKey(appointmentID) && appointmentInner.get(appointmentID) > 0){
@@ -154,14 +155,12 @@ public class QuebecServer extends DHMSPOA {
                         return log;
                     }
                 }
-                synchronized (this){
-                    appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
-                    String bookRecord = patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
-                    recordList.add(bookRecord);
-                    log = time + Constants.BOOK_APPOINTMENT + Constants.REQUEST_PARAMETERS + bookRecord + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.SUCCESS;
-                    changeAppointmentData();
-                    changeRecordData();
-                }
+                appointmentInner.put(appointmentID, appointmentInner.get(appointmentID) - 1);
+                String bookRecord = patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
+                recordList.add(bookRecord);
+                log = time + Constants.BOOK_APPOINTMENT + Constants.REQUEST_PARAMETERS + bookRecord + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.SUCCESS;
+                changeAppointmentData();
+                changeRecordData();
             }else{
                 log = time + Constants.BOOK_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.NO_CAPACITY;
             }
@@ -265,9 +264,18 @@ public class QuebecServer extends DHMSPOA {
             writeLog(log);
             return log;
         }
-        cancelAppointment(patientID, oldAppointmentID);
-        bookAppointment(patientID, newAppointmentID, newAppointmentType);
-        log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.SUCCESS;
+        String logBook = bookAppointment(patientID, newAppointmentID, newAppointmentType);
+        if (!logBook.contains(Constants.NO_CAPACITY)){
+            String logCancel = cancelAppointment(patientID, oldAppointmentID);
+            if (!logCancel.contains(Constants.APPOINTMENT_NOT_EXIST)){
+                log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.SUCCESS;
+            }else{
+                cancelAppointment(patientID, newAppointmentID);
+                log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.APPOINTMENT_NOT_EXIST;
+            }
+        }else{
+            log = time + Constants.SWAP_APPOINTMENT + Constants.REQUEST_PARAMETERS + patientID + Constants.SPACE + oldAppointmentID + Constants.SPACE + oldAppointmentType + Constants.SPACE + newAppointmentID + Constants.SPACE + newAppointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + Constants.NO_CAPACITY;
+        }
         writeLog(log);
         return log;
     }
@@ -394,7 +402,7 @@ public class QuebecServer extends DHMSPOA {
         return dtf.format(now);
     }
     public String getNextAppointment(String appointmentType, String appointmentID){
-        Map<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
+        ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
         if(appointmentInner != null){
             for (String key : appointmentInner.keySet()){
                 char slot = key.charAt(3);
