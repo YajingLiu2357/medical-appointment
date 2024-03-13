@@ -13,11 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @WebService(endpointInterface = "com.service.dhms.Appointment")
 @SOAPBinding(style = SOAPBinding.Style.RPC)
-public class MontrealServer implements Appointment {
+public class SherbrookeServer implements Appointment{
     private ConcurrentHashMap <String, ConcurrentHashMap<String, Integer>> appointmentOuter;
     private List<String> recordList;
     private List<String> recordOtherCities;
-    protected MontrealServer(){
+    public SherbrookeServer(){
         appointmentOuter = new ConcurrentHashMap<>();
         recordList = Collections.synchronizedList(new LinkedList<>());
         recordOtherCities = Collections.synchronizedList(new LinkedList<>());
@@ -26,7 +26,7 @@ public class MontrealServer implements Appointment {
     }
     @Override
     public String hello() {
-        return "Hello from Montreal";
+        return "Sherbrooke Server says hello!";
     }
 
     @Override
@@ -109,9 +109,9 @@ public class MontrealServer implements Appointment {
         if(queAppointment != null){
             appointmentAll.putAll(queAppointment);
         }
-        Map<String, Integer> sheAppointment = getOtherAppointment(appointmentType, Constants.SHE_APPOINTMENT_PORT);
-        if(sheAppointment != null){
-            appointmentAll.putAll(sheAppointment);
+        Map<String, Integer> mtlAppointment = getOtherAppointment(appointmentType, Constants.MTL_APPOINTMENT_PORT);
+        if(mtlAppointment != null){
+            appointmentAll.putAll(mtlAppointment);
         }
         if(appointmentAll.size()!=0){
             log = time + Constants.LIST_APPOINTMENT_AVAILABILITY + Constants.REQUEST_PARAMETERS + appointmentType + Constants.REQUEST_SUCCESS + Constants.RESPONSE + appointmentAll.toString();
@@ -124,7 +124,7 @@ public class MontrealServer implements Appointment {
 
     @Override
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
-        if (appointmentID.startsWith(Constants.MTL)){
+        if (appointmentID.startsWith(Constants.SHE)){
             String time = getTime();
             ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
             String log = "";
@@ -168,8 +168,8 @@ public class MontrealServer implements Appointment {
             String serverName = appointmentID.substring(0,3);
             if (serverName.equals(Constants.QUE)){
                 return bookCancelOtherAppointment(patientID, appointmentID, appointmentType, Constants.QUE_BOOK_CANCEL_PORT, Constants.BOOK);
-            }else if (serverName.equals(Constants.SHE)){
-                return bookCancelOtherAppointment(patientID, appointmentID, appointmentType, Constants.SHE_BOOK_CANCEL_PORT, Constants.BOOK);
+            }else if (serverName.equals(Constants.MTL)){
+                return bookCancelOtherAppointment(patientID, appointmentID, appointmentType, Constants.MTL_BOOK_CANCEL_PORT, Constants.BOOK);
             }
             return null;
         }
@@ -198,7 +198,7 @@ public class MontrealServer implements Appointment {
 
     @Override
     public String cancelAppointment(String patientID, String appointmentID) {
-        if (appointmentID.startsWith(Constants.MTL)){
+        if (appointmentID.startsWith(Constants.SHE)){
             String time = getTime();
             String log = "";
             for (String record : recordList){
@@ -220,8 +220,8 @@ public class MontrealServer implements Appointment {
             String serverName = appointmentID.substring(0,3);
             if (serverName.equals(Constants.QUE)){
                 return bookCancelOtherAppointment(patientID, appointmentID, null, Constants.QUE_BOOK_CANCEL_PORT, Constants.CANCEL);
-            }else if (serverName.equals(Constants.SHE)){
-                return bookCancelOtherAppointment(patientID, appointmentID, null, Constants.SHE_BOOK_CANCEL_PORT, Constants.CANCEL);
+            }else if (serverName.equals(Constants.MTL)){
+                return bookCancelOtherAppointment(patientID, appointmentID, null, Constants.MTL_BOOK_CANCEL_PORT, Constants.CANCEL);
             }
             return null;
         }
@@ -251,8 +251,8 @@ public class MontrealServer implements Appointment {
             if (queAppointment.size() != 0 && queAppointment.containsKey(newAppointmentID) && queAppointment.get(newAppointmentID) > 0){
                 newAppointmentAvailable = true;
             }
-        }else if (serverName.equals(Constants.SHE)){
-            Map<String, Integer> sheAppointment = getOtherAppointment(newAppointmentType, Constants.SHE_APPOINTMENT_PORT);
+        }else if (serverName.equals(Constants.MTL)){
+            Map<String, Integer> sheAppointment = getOtherAppointment(newAppointmentType, Constants.MTL_APPOINTMENT_PORT);
             if (sheAppointment.size() != 0 && sheAppointment.containsKey(newAppointmentID) && sheAppointment.get(newAppointmentID) > 0){
                 newAppointmentAvailable = true;
             }
@@ -278,7 +278,7 @@ public class MontrealServer implements Appointment {
         return log;
     }
     public void changeRecordData(){
-        String filePath = Constants.DATA_RECORD + Constants.MONTREAL_TXT;
+        String filePath = Constants.DATA_RECORD + Constants.SHERBROOKE_TXT;
         try{
             PrintWriter writer = new PrintWriter(filePath);
             writer.print("");
@@ -296,7 +296,7 @@ public class MontrealServer implements Appointment {
         }
     }
     public void changeAppointmentData(){
-        String filePath = Constants.DATA_APPOINTMENT + Constants.MONTREAL_TXT;
+        String filePath = Constants.DATA_APPOINTMENT + Constants.SHERBROOKE_TXT;
         try{
             PrintWriter writer = new PrintWriter(filePath);
             writer.print("");
@@ -315,8 +315,13 @@ public class MontrealServer implements Appointment {
             e.printStackTrace();
         }
     }
+    public String getTime(){
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(Constants.TIME_FORMAT);
+        LocalDateTime now = LocalDateTime.now();
+        return dtf.format(now);
+    }
     public void writeLog (String log){
-        String path = Constants.LOG_FILE_PATH + Constants.MONTREAL_TXT;
+        String path = Constants.LOG_FILE_PATH + Constants.SHERBROOKE_TXT;
         try{
             File file = new File(path);
             if(!file.exists()){
@@ -332,11 +337,6 @@ public class MontrealServer implements Appointment {
         }catch (IOException e){
             e.printStackTrace();
         }
-    }
-    public String getTime(){
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(Constants.TIME_FORMAT);
-        LocalDateTime now = LocalDateTime.now();
-        return dtf.format(now);
     }
     public String getNextAppointment(String appointmentType, String appointmentID){
         ConcurrentHashMap<String, Integer> appointmentInner = appointmentOuter.get(appointmentType);
@@ -365,20 +365,60 @@ public class MontrealServer implements Appointment {
         }
         return Constants.NOT_AVAILABLE;
     }
-    public List<String> getAllRecordList(){
-        List<String> recordListAll = new LinkedList<>();
-        if (recordList != null && recordList.size() > 0){
-            recordListAll.addAll(recordList);
+    public Map<String, Integer> getOtherAppointment(String appointmentType, String portNum){
+        Map<String, Integer> appointmentOther = new HashMap<>();
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            InetAddress address = InetAddress.getByName(Constants.LOCALHOST);
+            byte[] sendBuffer = appointmentType.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, Integer.parseInt(portNum));
+            socket.send(sendPacket);
+            byte[] receiveBuffer = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socket.receive(receivePacket);
+            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals(Constants.NOT_AVAILABLE)){
+                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
+                String [] appointments = receiveDataTrim.split(",");
+                for (String appointment : appointments){
+                    String [] appointmentSplit = appointment.split("=");
+                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
+                }
+            }
+            return appointmentOther;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if(socket != null){
+                socket.close();
+            }
         }
-        List<String> queRecord = getOtherRecord(Constants.QUE_RECORD_PORT);
-        if (queRecord != null && queRecord.size() > 0){
-            recordListAll.addAll(queRecord);
+    }
+    public String bookCancelOtherAppointment (String patientID, String appointmentID, String appointmentType, String portNum, String bookCancel){
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            InetAddress address = InetAddress.getByName(Constants.LOCALHOST);
+            String sendData = bookCancel + Constants.SPACE + patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
+            byte[] sendBuffer = sendData.getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, Integer.parseInt(portNum));
+            socket.send(sendPacket);
+            byte[] receiveBuffer = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+            socket.receive(receivePacket);
+            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
+            if (!receiveData.equals(Constants.NOT_AVAILABLE)) {
+                return receiveData;
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        } finally{
+            if(socket != null){
+                socket.close();
+            }
         }
-        List<String> sheRecord = getOtherRecord(Constants.SHE_RECORD_PORT);
-        if (sheRecord != null && sheRecord.size() > 0){
-            recordListAll.addAll(sheRecord);
-        }
-        return recordListAll;
+        return null;
     }
     public boolean checkThreeOtherAppointment(String patientID){
         int earliestDay = Integer.parseInt(recordOtherCities.get(0).split(Constants.SPACE)[1].substring(4,6));
@@ -425,106 +465,20 @@ public class MontrealServer implements Appointment {
         }
         return false;
     }
-    public Map<String, Integer> getOtherAppointment(String appointmentType, String portNum){
-        Map<String, Integer> appointmentOther = new HashMap<>();
-        DatagramSocket socket = null;
-        try {
-            socket = new DatagramSocket();
-            InetAddress address = InetAddress.getByName(Constants.LOCALHOST);
-            byte[] sendBuffer = appointmentType.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, Integer.parseInt(portNum));
-            socket.send(sendPacket);
-            byte[] receiveBuffer = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            socket.receive(receivePacket);
-            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            if (!receiveData.equals(Constants.NOT_AVAILABLE)){
-                String receiveDataTrim = receiveData.replaceAll("[{}\\s]", "");
-                String [] appointments = receiveDataTrim.split(",");
-                for (String appointment : appointments){
-                    String [] appointmentSplit = appointment.split("=");
-                    appointmentOther.put(appointmentSplit[0], Integer.parseInt(appointmentSplit[1]));
-                }
-            }
-            return appointmentOther;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if(socket != null){
-                socket.close();
-            }
+    public List<String> getAllRecordList(){
+        List<String> recordListAll = new LinkedList<>();
+        if (recordList != null && recordList.size() > 0){
+            recordListAll.addAll(recordList);
         }
-    }
-    public static Map<String, Map<String, Integer>> getAppointment() {
-        String filePath = Constants.DATA_APPOINTMENT + Constants.MONTREAL_TXT;
-        Map <String, Map<String, Integer>> appointment = new HashMap<>();
-        Map <String, Integer> physician = new HashMap<>();
-        Map <String, Integer> surgeon = new HashMap<>();
-        Map <String, Integer> dental = new HashMap<>();
-        appointment.put(Constants.PHYSICIAN, physician);
-        appointment.put(Constants.SURGEON, surgeon);
-        appointment.put(Constants.DENTAL, dental);
-        try{
-            FileReader fileReader = new FileReader(filePath);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            String line;
-            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
-                String [] lineSplit = line.split(Constants.SPACE);
-                String appointmentType = lineSplit[0];
-                String appointmentID = lineSplit[1];
-                int capacity = Integer.parseInt(lineSplit[2]);
-                appointment.get(appointmentType).put(appointmentID, capacity);
-            }
-            bufferedReader.close();
-            fileReader.close();
-            return appointment;
-        }catch (IOException e){
-            e.printStackTrace();
+        List<String> queRecord = getOtherRecord(Constants.QUE_RECORD_PORT);
+        if (queRecord != null && queRecord.size() > 0){
+            recordListAll.addAll(queRecord);
         }
-        return null;
-    }
-    public static List<String> getRecordList(){
-        String filePath = Constants.DATA_RECORD + Constants.MONTREAL_TXT;
-        List<String> recordList = new ArrayList<>();
-        try{
-            FileReader fileReader = new FileReader(filePath);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            String line;
-            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
-                recordList.add(line);
-            }
-            bufferedReader.close();
-            fileReader.close();
-            return recordList;
-        }catch (IOException e){
-            e.printStackTrace();
+        List<String> mtlRecord = getOtherRecord(Constants.MTL_RECORD_PORT);
+        if (mtlRecord != null && mtlRecord.size() > 0){
+            recordListAll.addAll(mtlRecord);
         }
-        return null;
-    }
-    public String bookCancelOtherAppointment (String patientID, String appointmentID, String appointmentType, String portNum, String bookCancel){
-        DatagramSocket socket = null;
-        try {
-            socket = new DatagramSocket();
-            InetAddress address = InetAddress.getByName(Constants.LOCALHOST);
-            String sendData = bookCancel + Constants.SPACE + patientID + Constants.SPACE + appointmentID + Constants.SPACE + appointmentType;
-            byte[] sendBuffer = sendData.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, Integer.parseInt(portNum));
-            socket.send(sendPacket);
-            byte[] receiveBuffer = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-            socket.receive(receivePacket);
-            String receiveData = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            if (!receiveData.equals(Constants.NOT_AVAILABLE)) {
-                return receiveData;
-            }
-        } catch(IOException e){
-            e.printStackTrace();
-        } finally{
-            if(socket != null){
-                socket.close();
-            }
-        }
-        return null;
+        return recordListAll;
     }
     public List<String> getOtherRecord(String portNum){
         List<String> recordListOther = new LinkedList<>();
@@ -555,12 +509,58 @@ public class MontrealServer implements Appointment {
         }
         return recordListOther;
     }
+    public static List<String> getRecordList(){
+        String filePath = Constants.DATA_RECORD + Constants.SHERBROOKE_TXT;
+        List<String> recordList = new ArrayList<>();
+        try{
+            FileReader fileReader = new FileReader(filePath);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
+                recordList.add(line);
+            }
+            bufferedReader.close();
+            fileReader.close();
+            return recordList;
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public static Map<String, Map<String, Integer>> getAppointment() {
+        String filePath = Constants.DATA_APPOINTMENT + Constants.SHERBROOKE_TXT;
+        Map <String, Map<String, Integer>> appointment = new HashMap<>();
+        Map <String, Integer> physician = new HashMap<>();
+        Map <String, Integer> surgeon = new HashMap<>();
+        Map <String, Integer> dental = new HashMap<>();
+        appointment.put(Constants.PHYSICIAN, physician);
+        appointment.put(Constants.SURGEON, surgeon);
+        appointment.put(Constants.DENTAL, dental);
+        try{
+            FileReader fileReader = new FileReader(filePath);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null && !line.equals("")){
+                String [] lineSplit = line.split(Constants.SPACE);
+                String appointmentType = lineSplit[0];
+                String appointmentID = lineSplit[1];
+                int capacity = Integer.parseInt(lineSplit[2]);
+                appointment.get(appointmentType).put(appointmentID, capacity);
+            }
+            bufferedReader.close();
+            fileReader.close();
+            return appointment;
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
     public static void main(String[] args) throws SocketException {
-        ReplyAppointment replyAppointment = new ReplyAppointment(Constants.MTL_APPOINTMENT_PORT);
+        ReplyAppointment replyAppointment = new ReplyAppointment(Constants.SHE_APPOINTMENT_PORT);
         replyAppointment.start();
-        ReplyRecord replyRecord = new ReplyRecord(Constants.MTL_RECORD_PORT);
+        ReplyRecord replyRecord = new ReplyRecord(Constants.SHE_RECORD_PORT);
         replyRecord.start();
-        DatagramSocket socket = new DatagramSocket(Integer.parseInt(Constants.MTL_BOOK_CANCEL_PORT));
+        DatagramSocket socket = new DatagramSocket(Integer.parseInt(Constants.SHE_BOOK_CANCEL_PORT));
         try{
             byte[] receiveData = new byte[1024];
             DatagramPacket receivePacket;
@@ -573,17 +573,17 @@ public class MontrealServer implements Appointment {
                 String bookCancel = bookData[0];
                 String patientID = bookData[1];
                 String appointmentID = bookData[2];
-                URL url = new URL("http://localhost:8080/appointment/mtl?wsdl");
-                QName qname = new QName("http://dhms.service.com/", "MontrealServerService");
+                URL url = new URL("http://localhost:8080/appointment/she?wsdl");
+                QName qname = new QName("http://dhms.service.com/", "SherbrookeServerService");
                 Service service = Service.create(url, qname);
-                Appointment mtl = service.getPort(Appointment.class);
+                Appointment she = service.getPort(Appointment.class);
                 if (bookCancel.equals(Constants.BOOK)){
                     String appointmentType = bookData[3];
-                    String log = mtl.bookAppointment(patientID, appointmentID, appointmentType);
+                    String log = she.bookAppointment(patientID, appointmentID, appointmentType);
                     DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
                     socket.send(replyPacketBook);
                 }else if (bookCancel.equals(Constants.CANCEL)){
-                    String log = mtl.cancelAppointment(patientID, appointmentID);
+                    String log = she.cancelAppointment(patientID, appointmentID);
                     DatagramPacket replyPacketBook = new DatagramPacket(log.getBytes(), log.length(), addressBook, portBook);
                     socket.send(replyPacketBook);
                 }

@@ -47,12 +47,12 @@ public final class Constants {
     public static final String SPACE = " ";
     public static final String NEW_LINE = "\n";
 
-    public static final String LOG_FILE_PATH = "./logs/server/";
+    public static final String LOG_FILE_PATH = "./com/service/dhms/logs/server/";
     public static final String DATA_APPOINTMENT = "./com/service/dhms/data/appointment/";
     public static final String DATA_RECORD = "./com/service/dhms/data/record/";
     public static final String MONTREAL_TXT = "Montreal.txt";
     public static final String QUEBEC_TXT = "Quebec.txt";
-    public static final String SHERBROOKE_TXT = "Sherbrooke.txt";
+    public static final String SHERBROOKE_TXT = "Sherbrooke.txt.txt";
 
     public static final String PHYSICIAN = "Physician";
     public static final String SURGEON = "Surgeon";

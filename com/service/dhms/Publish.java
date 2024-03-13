@@ -4,7 +4,9 @@ import javax.xml.ws.Endpoint;
 
 public class Publish {
     public static void main(String[] args){
-        Endpoint endpoint = Endpoint.publish("http://localhost:8080/Appointment", new MontrealServer());
-        System.out.println("Service is published. " + endpoint.isPublished());
+        Endpoint endpointMTL = Endpoint.publish("http://localhost:8080/appointment/mtl", new MontrealServer());
+        Endpoint endpointQUE = Endpoint.publish("http://localhost:8080/appointment/que", new QuebecServer());
+        Endpoint endpointSHE = Endpoint.publish("http://localhost:8080/appointment/she", new SherbrookeServer());
+        System.out.println("Services are published. ");
     }
 }

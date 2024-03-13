@@ -50,7 +50,7 @@ public final class Constants {
     public static final String DATA_RECORD = "./data/record/";
     public static final String MONTREAL_TXT = "Montreal.txt";
     public static final String QUEBEC_TXT = "Quebec.txt";
-    public static final String SHERBROOKE_TXT = "Sherbrooke.txt";
+    public static final String SHERBROOKE_TXT = "Sherbrooke.txt.txt";
 
     public static final String PHYSICIAN = "Physician";
     public static final String SURGEON = "Surgeon";

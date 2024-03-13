@@ -263,7 +263,7 @@ public class SherbrookeServer extends UnicastRemoteObject implements Appointment
         return dtf.format(now);
     }
     public void writeLog (String log){
-        String path = "./logs/server/Sherbrooke.txt";
+        String path = "./logs/server/Sherbrooke.txt.txt";
         try{
             File file = new File(path);
             if(!file.exists()){
