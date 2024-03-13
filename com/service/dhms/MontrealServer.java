@@ -24,10 +24,6 @@ public class MontrealServer implements Appointment {
         changeAppointmentData();
         changeRecordData();
     }
-    @Override
-    public String hello() {
-        return "Hello from Montreal";
-    }
 
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) {

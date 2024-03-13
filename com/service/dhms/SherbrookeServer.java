@@ -24,10 +24,6 @@ public class SherbrookeServer implements Appointment{
         changeAppointmentData();
         changeRecordData();
     }
-    @Override
-    public String hello() {
-        return "Sherbrooke Server says hello!";
-    }
 
     @Override
     public String addAppointment(String appointmentID, String appointmentType, int capacity) {

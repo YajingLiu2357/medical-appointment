@@ -8,8 +8,6 @@ import javax.jws.soap.SOAPBinding;
 @SOAPBinding(style = SOAPBinding.Style.RPC)
 public interface Appointment {
     @WebMethod
-    String hello();
-    @WebMethod
     String addAppointment(String appointmentID, String appointmentType, int capacity);
     @WebMethod
     String removeAppointment(String appointmentID, String appointmentType);
