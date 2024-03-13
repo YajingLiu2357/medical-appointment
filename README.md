@@ -49,7 +49,7 @@ orbd -ORBInitialPort 1050 -ORBInitialHost localhost
 
 I developed an interface [Appointment](./com/service/dhms/Appointment.java).  And I developed three different servers to implement this interface. I published these three servers in [Publish](./com/service/dhms/Publish.java).  I used url and qname to get the server instances and called servers' methods in [Driver](./com/service/dhms/Driver.java).
 
-**Run:** main methods of [Publish](./com/service/dhms/Publish.java), [MontrealServer](./com/service/dhms/MontrealServer.java), [QuebecServer](./com/service/dhms/QuebecServer.java), [SherbrookeServer](./com/service/dhms/SherbrookeServer.java), [Driver](./com/service/dhms/Driver.java) .
+**Run:** main methods of [Publish](./com/service/dhms/Publish.java), [MontrealServer](./com/service/dhms/MontrealServer.java), [QuebecServer](./com/service/dhms/QuebecServer.java), [SherbrookeServer](./com/service/dhms/SherbrookeServer.java), [Driver](./com/service/dhms/Driver.java) in sequence.
 
 ### UDP/IP
 
